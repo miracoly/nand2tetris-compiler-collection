@@ -25,7 +25,8 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Hack.Assembler
+      Hack.Assembler.Internal
   other-modules:
       Paths_nand2tetris_assembler
   hs-source-dirs:
@@ -33,9 +34,10 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , text >=1.2.5 && <2.0.0
   default-language: Haskell2010
 
-executable nand2tetris-assembler-exe
+executable nand2tetris-assembler
   main-is: Main.hs
   other-modules:
       Paths_nand2tetris_assembler
@@ -45,17 +47,23 @@ executable nand2tetris-assembler-exe
   build-depends:
       base >=4.7 && <5
     , nand2tetris-assembler
+    , text >=1.2.5 && <2.0.0
   default-language: Haskell2010
 
 test-suite nand2tetris-assembler-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Hack.AssemblerSpec
       Paths_nand2tetris_assembler
   hs-source-dirs:
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      QuickCheck >=2.14.2 && <3.0.0
+    , base >=4.7 && <5
+    , hspec >=2.9.7 && <3.0.0
     , nand2tetris-assembler
+    , quickcheck-instances >=0.3.29.1 && <0.4.0.0
+    , text >=1.2.5 && <2.0.0
   default-language: Haskell2010
