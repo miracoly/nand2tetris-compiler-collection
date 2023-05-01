@@ -4,7 +4,8 @@ module Hack.Assembler.Internal (module Hack.Assembler.Internal) where
 
 import Control.Applicative (ZipList (..), liftA2)
 import Data.Maybe (fromMaybe)
-import Data.Text as T (Text, elem, filter, lines, strip, stripSuffix, take, unlines)
+import Data.Text as T (Text, elem, filter, head, length, lines, strip, stripSuffix, tail, take, unlines, unpack)
+import Data.Text.Read (Reader, decimal)
 import Numeric (showBin)
 import Prelude as P hiding (dropWhile, elem, length, lines, take, unlines)
 
@@ -25,11 +26,38 @@ data Instruction
         -- | 3 Bit value which defines when to jump.
         _jump :: Int
       }
+  deriving (Eq)
 
 instance Show Instruction where
   show i = case i of
     A' n -> "A " <> showBin n ""
     C' a c d j -> "C " <> unwords (getZipList $ liftA2 showBin (ZipList [a, c, d, j]) $ ZipList $ repeat "")
+
+type ParseErrorDescription = String
+
+-- | Parse single Instruction and return 'Data.Either.Right' 'Instruction' if instruction could be parsed,
+-- otherwise 'Data.Either.Left' 'ParseErrorDescription'.
+parseInstruction :: Text -> Either ParseErrorDescription Instruction
+parseInstruction instr
+  | length instr < 2 = Left $ "Could not parse " <> unpack instr
+  | otherwise =
+    let h = T.head instr
+        address = T.tail instr
+     in case h of
+          '@' -> parseA address
+          _ -> parseC instr
+
+-- | Parse single __A__ Instruction and return 'Data.Either.Right' 'Instruction' if @'address'@ is between 1 and 32767 (15 Bit),
+-- otherwise 'Data.Either.Left' 'ParseErrorDescription'.
+parseA :: Text -> Either ParseErrorDescription Instruction
+parseA address = (decimal :: Reader Int) address >>= toInstr
+  where
+    toInstr (a, _)
+      | a < 1 = Left $ "Address " <> unpack address <> " is less than 1."
+      | a > 32767 = Left $ "Address " <> unpack address <> " is bigger than 15 bits."
+      | otherwise = Right $ A' a
+
+parseC = undefined
 
 -- | Remove whitespaces, empty lines and comments.
 cleanUpCode :: Text -> Text

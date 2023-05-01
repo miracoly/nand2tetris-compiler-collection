@@ -9,3 +9,6 @@ Week 6 is about programming an assembler for the previous build architecture, ca
 3. Translate each line
    - `A` Instrcution or
    - `C` Instruction
+
+## Limitations
+- works only with decimal numbers in assembly

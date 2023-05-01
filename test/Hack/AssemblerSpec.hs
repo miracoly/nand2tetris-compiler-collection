@@ -2,9 +2,10 @@
 
 module Hack.AssemblerSpec (spec) where
 
+import Data.Either
 import Data.Text (pack)
-import Hack.Assembler.Internal (cleanUpCode, isCode, isComment, Instruction(..))
-import Test.Hspec
+import Hack.Assembler.Internal (Instruction (..), cleanUpCode, isCode, isComment, parseInstruction)
+import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
 import Test.QuickCheck (elements, forAll, listOf1, property)
 import Test.QuickCheck.Instances.Text ()
 
@@ -17,6 +18,17 @@ spec = do
     it "shows C Instruction" $ do
       show (C' 1 8 6 7) `shouldBe` "C 1 1000 110 111"
       show (C' 0 60 4 5) `shouldBe` "C 0 111100 100 101"
+
+  describe "parseInstruction" $ do
+    it "handles empty command" $ do
+      parseInstruction "" `shouldSatisfy` isLeft
+    it "handles address of 0" $ do
+      parseInstruction "@0" `shouldSatisfy` isLeft
+    it "parses valid A instruction" $ do
+      parseInstruction "@1" `shouldBe` Right (A' 1)
+      parseInstruction "@32767" `shouldBe` Right (A' 32767)
+    it "handles address bigger than 15 bit" $ do
+      parseInstruction "@32768" `shouldSatisfy` isLeft
 
   describe "cleanUpCode" $ do
     it "can handle empty text" $ do
