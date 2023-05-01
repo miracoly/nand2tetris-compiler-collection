@@ -3,11 +3,11 @@
 module Hack.Assembler.Internal (module Hack.Assembler.Internal) where
 
 import Control.Applicative (ZipList (..), liftA2)
-import Data.Maybe (fromMaybe)
-import Data.Text as T (Text, elem, filter, head, length, lines, strip, stripSuffix, tail, take, unlines, unpack)
+import Data.Maybe (fromMaybe, isJust)
+import Data.Text as T (Text, elem, filter, head, length, lines, null, strip, stripSuffix, tail, take, unlines, unpack)
 import Data.Text.Read (Reader, decimal)
 import Numeric (showBin)
-import Prelude as P hiding (dropWhile, elem, length, lines, take, unlines)
+import Prelude as P hiding (dropWhile, elem, length, lines, null, take, unlines)
 
 -- | Represent CPU Instruction of Hack Computer.
 --
@@ -39,7 +39,8 @@ type ParseErrorDescription = String
 -- otherwise 'Data.Either.Left' 'ParseErrorDescription'.
 parseInstruction :: Text -> Either ParseErrorDescription Instruction
 parseInstruction instr
-  | length instr < 2 = Left $ "Could not parse " <> unpack instr
+  | null instr = Left $ "Could not parse " <> unpack instr
+  | length instr < 2 = parseC instr
   | otherwise =
     let h = T.head instr
         address = T.tail instr
@@ -57,7 +58,38 @@ parseA address = (decimal :: Reader Int) address >>= toInstr
       | a > 32767 = Left $ "Address " <> unpack address <> " is bigger than 15 bits."
       | otherwise = Right $ A' a
 
-parseC = undefined
+parseC :: Text -> Either ParseErrorDescription Instruction
+parseC command = maybe fallBack Right parsed
+  where
+    parsed = C' <$> a <*> comp <*> dest <*> jump
+    fallBack = Left ("Could not parse computation command " <> unpack command)
+    a = Just 0
+    comp = lookup command computationLUT
+    dest = Just 0
+    jump = Just 0
+
+-- | Lookup table for every computation command which represents '_comp' of 'Instruction'.
+computationLUT :: [(Text, Int)]
+computationLUT =
+  [ ("0", 42),
+    ("1", 63),
+    ("-1", 58),
+    ("D", 12),
+    ("A", 48),
+    ("!D", 13),
+    ("!A", 49),
+    ("-D", 15),
+    ("-A", 51),
+    ("D+1", 31),
+    ("A+1", 55),
+    ("D-1", 14),
+    ("A-1", 50),
+    ("D+A", 2),
+    ("D-A", 19),
+    ("A-D", 7),
+    ("D&A", 0),
+    ("D|A", 21)
+  ]
 
 -- | Remove whitespaces, empty lines and comments.
 cleanUpCode :: Text -> Text
