@@ -30,7 +30,7 @@ spec = do
     it "handles address bigger than 15 bit" $ do
       parseInstruction "@32768" `shouldSatisfy` isLeft
 
-  describe "parseInstruction of A instructions" $ do
+  describe "parseInstruction of C instructions" $ do
     it "parses all possible computations for a=0" $ do
       parseInstruction "0" `shouldBe` Right (C' 0 42 0 0)
       parseInstruction "1" `shouldBe` Right (C' 0 63 0 0)
@@ -41,7 +41,6 @@ spec = do
       parseInstruction "!A" `shouldBe` Right (C' 0 49 0 0)
       parseInstruction "-D" `shouldBe` Right (C' 0 15 0 0)
       parseInstruction "-A" `shouldBe` Right (C' 0 51 0 0)
-
       parseInstruction "D+1" `shouldBe` Right (C' 0 31 0 0)
       parseInstruction "A+1" `shouldBe` Right (C' 0 55 0 0)
       parseInstruction "D-1" `shouldBe` Right (C' 0 14 0 0)
@@ -51,6 +50,17 @@ spec = do
       parseInstruction "A-D" `shouldBe` Right (C' 0 7 0 0)
       parseInstruction "D&A" `shouldBe` Right (C' 0 0 0 0)
       parseInstruction "D|A" `shouldBe` Right (C' 0 21 0 0)
+    it "parses all possible computations for a=1" $ do
+      parseInstruction "M" `shouldBe` Right (C' 1 48 0 0)
+      parseInstruction "!M" `shouldBe` Right (C' 1 49 0 0)
+      parseInstruction "-M" `shouldBe` Right (C' 1 51 0 0)
+      parseInstruction "M+1" `shouldBe` Right (C' 1 55 0 0)
+      parseInstruction "M-1" `shouldBe` Right (C' 1 50 0 0)
+      parseInstruction "D+M" `shouldBe` Right (C' 1 2 0 0)
+      parseInstruction "D-M" `shouldBe` Right (C' 1 19 0 0)
+      parseInstruction "M-D" `shouldBe` Right (C' 1 7 0 0)
+      parseInstruction "D&M" `shouldBe` Right (C' 1 0 0 0)
+      parseInstruction "D|M" `shouldBe` Right (C' 1 21 0 0)
 
   describe "cleanUpCode" $ do
     it "can handle empty text" $ do

@@ -3,11 +3,11 @@
 module Hack.Assembler.Internal (module Hack.Assembler.Internal) where
 
 import Control.Applicative (ZipList (..), liftA2)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe)
 import Data.Text as T (Text, elem, filter, head, length, lines, null, strip, stripSuffix, tail, take, unlines, unpack)
 import Data.Text.Read (Reader, decimal)
 import Numeric (showBin)
-import Prelude as P hiding (dropWhile, elem, length, lines, null, take, unlines)
+import Prelude as P hiding (dropWhile, length, lines, null, take, unlines)
 
 -- | Represent CPU Instruction of Hack Computer.
 --
@@ -63,14 +63,18 @@ parseC command = maybe fallBack Right parsed
   where
     parsed = C' <$> a <*> comp <*> dest <*> jump
     fallBack = Left ("Could not parse computation command " <> unpack command)
-    a = Just 0
-    comp = lookup command computationLUT
+    a
+      | command `P.elem` fmap fst computationAZeroLUT = Just 0
+      | command `P.elem` fmap fst computationAOneLUT = Just 1
+      | otherwise = Nothing
+    comp = a >>= lookup command . getLUT
     dest = Just 0
     jump = Just 0
+    getLUT a' = if a' == 0 then computationAZeroLUT else computationAOneLUT 
 
--- | Lookup table for every computation command which represents '_comp' of 'Instruction'.
-computationLUT :: [(Text, Int)]
-computationLUT =
+-- | Lookup table for __A=0__ ('_a') computation command which represents '_comp' of 'Instruction'.
+computationAZeroLUT :: [(Text, Int)]
+computationAZeroLUT =
   [ ("0", 42),
     ("1", 63),
     ("-1", 58),
@@ -90,6 +94,34 @@ computationLUT =
     ("D&A", 0),
     ("D|A", 21)
   ]
+  
+-- | Lookup table for __A=1__ ('_a') computation command which represents '_comp' of 'Instruction'.
+computationAOneLUT :: [(Text, Int)]
+computationAOneLUT =
+  [ ("M", 48),
+    ("!M", 49),
+    ("-M", 51),
+    ("M+1", 55),
+    ("M-1", 50),
+    ("D+M", 2),
+    ("D-M", 19),
+    ("M-D", 7),
+    ("D&M", 0),
+    ("D|M", 21)
+  ]
+
+-- | Lookup table for every destination which represents '_dest' of 'Instruction'.
+destinationLUT :: [(Text, Int)]
+destinationLUT =
+  [ ("", 42),
+    ("M", 1),
+    ("D", 58),
+    ("MD", 12),
+    ("A", 48),
+    ("AM", 13),
+    ("AD", 49),
+    ("AMD", 15)
+  ]
 
 -- | Remove whitespaces, empty lines and comments.
 cleanUpCode :: Text -> Text
@@ -103,7 +135,7 @@ cleanUpCode =
 
 -- | Return True if Text does NOT contain any white spaces, new lines or comments, otherwise False.
 isCode :: Text -> Bool
-isCode = and . fmap not . sequenceA [isComment, (== ""), (== "\n"), elem ' ', elem '\n']
+isCode = and . fmap not . sequenceA [isComment, (== ""), (== "\n"), T.elem ' ', T.elem '\n']
 
 -- | Return True if Text is comment, otherwise False.
 isComment :: Text -> Bool
