@@ -54,7 +54,6 @@ parseA :: Text -> Either ParseErrorDescription Instruction
 parseA address = (decimal :: Reader Int) address >>= toInstr
   where
     toInstr (a, _)
-      | a < 1 = Left $ "Address " <> unpack address <> " is less than 1."
       | a > 32767 = Left $ "Address " <> unpack address <> " is bigger than 15 bits."
       | otherwise = Right $ A' a
 

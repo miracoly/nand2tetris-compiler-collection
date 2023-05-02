@@ -22,9 +22,8 @@ spec = do
   describe "parseInstruction of A instructions" $ do
     it "handles empty command" $ do
       parseInstruction "" `shouldSatisfy` isLeft
-    it "handles address of 0" $ do
-      parseInstruction "@0" `shouldSatisfy` isLeft
     it "parses valid A instruction" $ do
+      parseInstruction "@0" `shouldBe` Right (A' 0)
       parseInstruction "@1" `shouldBe` Right (A' 1)
       parseInstruction "@32767" `shouldBe` Right (A' 32767)
     it "handles address bigger than 15 bit" $ do
