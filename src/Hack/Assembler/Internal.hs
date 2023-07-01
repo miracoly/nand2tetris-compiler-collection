@@ -6,10 +6,11 @@ import Control.Applicative (ZipList (..), liftA2, (<|>))
 import Control.Monad (join)
 import Data.List as L (head, length)
 import Data.Maybe (fromMaybe)
-import Data.Text as T (Text, elem, filter, head, length, lines, null, split, strip, stripSuffix, tail, take, unlines, unpack)
+import Data.Text as T (Text, elem, filter, head, length, lines, null, split, strip, stripSuffix, tail, take, unlines, unpack, pack)
 import Data.Text.Read (Reader, decimal)
 import Numeric (showBin)
 import Prelude as P hiding (dropWhile, length, lines, null, span, take, unlines)
+import Text.Printf (printf)
 
 -- | Represent CPU Instruction of Hack Computer.
 --
@@ -36,6 +37,11 @@ instance Show Instruction where
     C' a c d j -> "C " <> unwords (getZipList $ liftA2 showBin (ZipList [a, c, d, j]) $ ZipList $ repeat "")
 
 type ParseErrorDescription = String
+
+binary :: Instruction -> Text
+binary i = case i of
+  A' n -> "0 " <> T.pack (printf "%015b" n)
+  C' a c d j -> "1 " <> T.pack (unwords (getZipList $ liftA2 showBin (ZipList [a, c, d, j]) $ ZipList $ repeat ""))
 
 -- | Parse single Instruction and return 'Data.Either.Right' 'Instruction' if instruction could be parsed,
 -- otherwise 'Data.Either.Left' 'ParseErrorDescription'.

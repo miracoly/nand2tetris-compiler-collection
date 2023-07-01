@@ -1,13 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module Hack.AssemblerSpec (spec) where
 
 import Data.Either
-import Data.Text (pack)
-import Hack.Assembler.Internal (Instruction (..), cleanUpCode, isCode, isComment, parseInstruction, splitCInstr, CInstrSplit(..), fromInstrSplit)
+import Data.Text (Text, pack)
+import Hack.Assembler (parse)
+import Hack.Assembler.Internal (CInstrSplit (..), Instruction (..), cleanUpCode, isCode, isComment, parseInstruction, splitCInstr, binary)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
 import Test.QuickCheck (elements, forAll, listOf1, property)
 import Test.QuickCheck.Instances.Text ()
+import Text.RawString.QQ (r)
 
 spec :: Spec
 spec = do
@@ -31,70 +34,84 @@ spec = do
     it "handles address bigger than 15 bit" $ do
       parseInstruction "@32768" `shouldSatisfy` isLeft
 
+  describe "parse" $ do
+    it "parses empty text" $ do
+      parse "" `shouldBe` Right []
+    it "mixed instructions" $ do
+      parse exampleInstructionsTextOne `shouldBe` Right exampleInstructionsOne
+      parse exampleInstructionsTextTwo `shouldBe` Right exampleInstructionsTwo
+    it "handles errors" $ do
+      parse "bla\nblub" `shouldSatisfy` isLeft
+      
+  describe "binary" $ do
+    it "shows binary representation of instruction" $ do
+      fmap binary exampleInstructionsTwo `shouldBe` binaryInstructionsTwo
+      fmap binary exampleInstructionsThree `shouldBe` binaryInstructionsThree
+
   describe "parseInstruction of C instructions" $ do
-      it "parses all possible computations for a=0" $ do
-        parseInstruction "0" `shouldBe` Right (C' 0 42 0 0)
-        parseInstruction "1" `shouldBe` Right (C' 0 63 0 0)
-        parseInstruction "-1" `shouldBe` Right (C' 0 58 0 0)
-        parseInstruction "D" `shouldBe` Right (C' 0 12 0 0)
-        parseInstruction "A" `shouldBe` Right (C' 0 48 0 0)
-        parseInstruction "!D" `shouldBe` Right (C' 0 13 0 0)
-        parseInstruction "!A" `shouldBe` Right (C' 0 49 0 0)
-        parseInstruction "-D" `shouldBe` Right (C' 0 15 0 0)
-        parseInstruction "-A" `shouldBe` Right (C' 0 51 0 0)
-        parseInstruction "D+1" `shouldBe` Right (C' 0 31 0 0)
-        parseInstruction "A+1" `shouldBe` Right (C' 0 55 0 0)
-        parseInstruction "D-1" `shouldBe` Right (C' 0 14 0 0)
-        parseInstruction "A-1" `shouldBe` Right (C' 0 50 0 0)
-        parseInstruction "D+A" `shouldBe` Right (C' 0 2 0 0)
-        parseInstruction "D-A" `shouldBe` Right (C' 0 19 0 0)
-        parseInstruction "A-D" `shouldBe` Right (C' 0 7 0 0)
-        parseInstruction "D&A" `shouldBe` Right (C' 0 0 0 0)
-        parseInstruction "D|A" `shouldBe` Right (C' 0 21 0 0)
-      it "parses all possible computations for a=1" $ do
-        parseInstruction "M" `shouldBe` Right (C' 1 48 0 0)
-        parseInstruction "!M" `shouldBe` Right (C' 1 49 0 0)
-        parseInstruction "-M" `shouldBe` Right (C' 1 51 0 0)
-        parseInstruction "M+1" `shouldBe` Right (C' 1 55 0 0)
-        parseInstruction "M-1" `shouldBe` Right (C' 1 50 0 0)
-        parseInstruction "D+M" `shouldBe` Right (C' 1 2 0 0)
-        parseInstruction "D-M" `shouldBe` Right (C' 1 19 0 0)
-        parseInstruction "M-D" `shouldBe` Right (C' 1 7 0 0)
-        parseInstruction "D&M" `shouldBe` Right (C' 1 0 0 0)
-        parseInstruction "D|M" `shouldBe` Right (C' 1 21 0 0)
-      it "parses all possible destinations for a=0" $ do
-        parseInstruction "0" `shouldBe` Right (C' 0 42 0 0)
-        parseInstruction "M=0" `shouldBe` Right (C' 0 42 1 0)
-        parseInstruction "D=0" `shouldBe` Right (C' 0 42 2 0)
-        parseInstruction "MD=0" `shouldBe` Right (C' 0 42 3 0)
-        parseInstruction "A=0" `shouldBe` Right (C' 0 42 4 0)
-        parseInstruction "AM=0" `shouldBe` Right (C' 0 42 5 0)
-        parseInstruction "AD=0" `shouldBe` Right (C' 0 42 6 0)
-        parseInstruction "AMD=0" `shouldBe` Right (C' 0 42 7 0)
-      it "parses all possible destinations for a=1" $ do
-        parseInstruction "M=M" `shouldBe` Right (C' 1 48 1 0)
-        parseInstruction "D=!M" `shouldBe` Right (C' 1 49 2 0)
-        parseInstruction "MD=-M" `shouldBe` Right (C' 1 51 3 0)
-        parseInstruction "A=M+1" `shouldBe` Right (C' 1 55 4 0)
-        parseInstruction "AM=M-1" `shouldBe` Right (C' 1 50 5 0)
-        parseInstruction "AD=D+M" `shouldBe` Right (C' 1 2 6 0)
-        parseInstruction "AMD=D-M" `shouldBe` Right (C' 1 19 7 0)
-      it "parses all possible jumps for a=0" $ do
-        parseInstruction "0;JGT" `shouldBe` Right (C' 0 42 0 1)
-        parseInstruction "-1;JEQ" `shouldBe` Right (C' 0 58 0 2)
-        parseInstruction "A;JGE" `shouldBe` Right (C' 0 48 0 3)
-        parseInstruction "!D;JLT" `shouldBe` Right (C' 0 13 0 4)
-        parseInstruction "-D;JNE" `shouldBe` Right (C' 0 15 0 5)
-        parseInstruction "D+1;JLE" `shouldBe` Right (C' 0 31 0 6)
-        parseInstruction "D|A;JMP" `shouldBe` Right (C' 0 21 0 7)
-      it "parses all possible jumps with destination for a=0" $ do
-        parseInstruction "M=0;JGT" `shouldBe` Right (C' 0 42 1 1)
-        parseInstruction "D=-1;JEQ" `shouldBe` Right (C' 0 58 2 2)
-        parseInstruction "MD=A;JGE" `shouldBe` Right (C' 0 48 3 3)
-        parseInstruction "A=!D;JLT" `shouldBe` Right (C' 0 13 4 4)
-        parseInstruction "AM=-D;JNE" `shouldBe` Right (C' 0 15 5 5)
-        parseInstruction "AD=D+1;JLE" `shouldBe` Right (C' 0 31 6 6)
-        parseInstruction "AMD=D|A;JMP" `shouldBe` Right (C' 0 21 7 7)
+    it "parses all possible computations for a=0" $ do
+      parseInstruction "0" `shouldBe` Right (C' 0 42 0 0)
+      parseInstruction "1" `shouldBe` Right (C' 0 63 0 0)
+      parseInstruction "-1" `shouldBe` Right (C' 0 58 0 0)
+      parseInstruction "D" `shouldBe` Right (C' 0 12 0 0)
+      parseInstruction "A" `shouldBe` Right (C' 0 48 0 0)
+      parseInstruction "!D" `shouldBe` Right (C' 0 13 0 0)
+      parseInstruction "!A" `shouldBe` Right (C' 0 49 0 0)
+      parseInstruction "-D" `shouldBe` Right (C' 0 15 0 0)
+      parseInstruction "-A" `shouldBe` Right (C' 0 51 0 0)
+      parseInstruction "D+1" `shouldBe` Right (C' 0 31 0 0)
+      parseInstruction "A+1" `shouldBe` Right (C' 0 55 0 0)
+      parseInstruction "D-1" `shouldBe` Right (C' 0 14 0 0)
+      parseInstruction "A-1" `shouldBe` Right (C' 0 50 0 0)
+      parseInstruction "D+A" `shouldBe` Right (C' 0 2 0 0)
+      parseInstruction "D-A" `shouldBe` Right (C' 0 19 0 0)
+      parseInstruction "A-D" `shouldBe` Right (C' 0 7 0 0)
+      parseInstruction "D&A" `shouldBe` Right (C' 0 0 0 0)
+      parseInstruction "D|A" `shouldBe` Right (C' 0 21 0 0)
+    it "parses all possible computations for a=1" $ do
+      parseInstruction "M" `shouldBe` Right (C' 1 48 0 0)
+      parseInstruction "!M" `shouldBe` Right (C' 1 49 0 0)
+      parseInstruction "-M" `shouldBe` Right (C' 1 51 0 0)
+      parseInstruction "M+1" `shouldBe` Right (C' 1 55 0 0)
+      parseInstruction "M-1" `shouldBe` Right (C' 1 50 0 0)
+      parseInstruction "D+M" `shouldBe` Right (C' 1 2 0 0)
+      parseInstruction "D-M" `shouldBe` Right (C' 1 19 0 0)
+      parseInstruction "M-D" `shouldBe` Right (C' 1 7 0 0)
+      parseInstruction "D&M" `shouldBe` Right (C' 1 0 0 0)
+      parseInstruction "D|M" `shouldBe` Right (C' 1 21 0 0)
+    it "parses all possible destinations for a=0" $ do
+      parseInstruction "0" `shouldBe` Right (C' 0 42 0 0)
+      parseInstruction "M=0" `shouldBe` Right (C' 0 42 1 0)
+      parseInstruction "D=0" `shouldBe` Right (C' 0 42 2 0)
+      parseInstruction "MD=0" `shouldBe` Right (C' 0 42 3 0)
+      parseInstruction "A=0" `shouldBe` Right (C' 0 42 4 0)
+      parseInstruction "AM=0" `shouldBe` Right (C' 0 42 5 0)
+      parseInstruction "AD=0" `shouldBe` Right (C' 0 42 6 0)
+      parseInstruction "AMD=0" `shouldBe` Right (C' 0 42 7 0)
+    it "parses all possible destinations for a=1" $ do
+      parseInstruction "M=M" `shouldBe` Right (C' 1 48 1 0)
+      parseInstruction "D=!M" `shouldBe` Right (C' 1 49 2 0)
+      parseInstruction "MD=-M" `shouldBe` Right (C' 1 51 3 0)
+      parseInstruction "A=M+1" `shouldBe` Right (C' 1 55 4 0)
+      parseInstruction "AM=M-1" `shouldBe` Right (C' 1 50 5 0)
+      parseInstruction "AD=D+M" `shouldBe` Right (C' 1 2 6 0)
+      parseInstruction "AMD=D-M" `shouldBe` Right (C' 1 19 7 0)
+    it "parses all possible jumps for a=0" $ do
+      parseInstruction "0;JGT" `shouldBe` Right (C' 0 42 0 1)
+      parseInstruction "-1;JEQ" `shouldBe` Right (C' 0 58 0 2)
+      parseInstruction "A;JGE" `shouldBe` Right (C' 0 48 0 3)
+      parseInstruction "!D;JLT" `shouldBe` Right (C' 0 13 0 4)
+      parseInstruction "-D;JNE" `shouldBe` Right (C' 0 15 0 5)
+      parseInstruction "D+1;JLE" `shouldBe` Right (C' 0 31 0 6)
+      parseInstruction "D|A;JMP" `shouldBe` Right (C' 0 21 0 7)
+    it "parses all possible jumps with destination for a=0" $ do
+      parseInstruction "M=0;JGT" `shouldBe` Right (C' 0 42 1 1)
+      parseInstruction "D=-1;JEQ" `shouldBe` Right (C' 0 58 2 2)
+      parseInstruction "MD=A;JGE" `shouldBe` Right (C' 0 48 3 3)
+      parseInstruction "A=!D;JLT" `shouldBe` Right (C' 0 13 4 4)
+      parseInstruction "AM=-D;JNE" `shouldBe` Right (C' 0 15 5 5)
+      parseInstruction "AD=D+1;JLE" `shouldBe` Right (C' 0 31 6 6)
+      parseInstruction "AMD=D|A;JMP" `shouldBe` Right (C' 0 21 7 7)
 
   describe "splitCInstr" $ do
     it "gets Computation part" $ do
@@ -190,3 +207,97 @@ spec = do
       isComment "//" `shouldBe` True
       isComment "// jfal;kfja;lf" `shouldBe` True
       isComment "  // jfal;kfja;lf" `shouldBe` True
+
+exampleInstructionsTextOne :: Text
+exampleInstructionsTextOne =
+  [r|
+0 
+1 
+-1 
+D 
+A 
+!D 
+!A 
+-D 
+-A 
+D+1
+A+1
+D-1
+A-1
+D+A
+D-A
+A-D
+D&A
+D|A
+  |]
+
+exampleInstructionsOne :: [Instruction]
+exampleInstructionsOne =
+  [ C' 0 42 0 0,
+    C' 0 63 0 0,
+    C' 0 58 0 0,
+    C' 0 12 0 0,
+    C' 0 48 0 0,
+    C' 0 13 0 0,
+    C' 0 49 0 0,
+    C' 0 15 0 0,
+    C' 0 51 0 0,
+    C' 0 31 0 0,
+    C' 0 55 0 0,
+    C' 0 14 0 0,
+    C' 0 50 0 0,
+    C' 0 2 0 0,
+    C' 0 19 0 0,
+    C' 0 7 0 0,
+    C' 0 0 0 0,
+    C' 0 21 0 0
+  ]
+
+exampleInstructionsTextTwo :: Text
+exampleInstructionsTextTwo =
+  [r|
+M=0;JGT
+D=-1;JEQ
+MD=A;JGE
+A=!D;JLT
+AM=-D;JNE
+AD=D+1;JLE
+AMD=D|A;JMP
+  |]
+
+exampleInstructionsTwo :: [Instruction]
+exampleInstructionsTwo =
+  [ C' 0 42 1 1,
+    C' 0 58 2 2,
+    C' 0 48 3 3,
+    C' 0 13 4 4,
+    C' 0 15 5 5,
+    C' 0 31 6 6,
+    C' 0 21 7 7
+  ]
+
+binaryInstructionsTwo :: [Text]
+binaryInstructionsTwo = 
+  [ "1 0 101010 001 001",
+    "1 0 111010 010 010",
+    "1 0 110000 011 011",
+    "1 0 001101 100 100",
+    "1 0 001111 101 101",
+    "1 0 011111 111 110",
+    "1 0 010101 111 111"
+  ]
+  
+exampleInstructionsThree :: [Instruction]
+exampleInstructionsThree =
+  [
+    A' 32767,
+    A' 0,
+    A' 111
+  ]
+
+binaryInstructionsThree :: [Text]
+binaryInstructionsThree = 
+  [ "0 111111111111111",
+    "0 000000000000000",
+    "0 000000001101111"
+  ]

@@ -61,3 +61,4 @@ tests:
     - hspec >= 2.9.7 && < 3.0.0
     - QuickCheck >= 2.14.2 && < 3.0.0
     - quickcheck-instances >= 0.3.29.1 && < 0.4.0.0
+    - raw-strings-qq == 1.1
