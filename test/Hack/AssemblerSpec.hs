@@ -16,11 +16,11 @@ spec :: Spec
 spec = do
   describe "Binary is member of Read class" $ do
     it "shows A Instruction" $ do
-      show (A' 12) `shouldBe` "A 1100"
-      show (A' 100) `shouldBe` "A 1100100"
+      show (A' 12) `shouldBe` "A 12"
+      show (A' 100) `shouldBe` "A 100"
     it "shows C Instruction" $ do
-      show (C' 1 8 6 7) `shouldBe` "C 1 1000 110 111"
-      show (C' 0 60 4 5) `shouldBe` "C 0 111100 100 101"
+      show (C' 1 8 6 7) `shouldBe` "C 1 8 6 7"
+      show (C' 0 60 4 5) `shouldBe` "C 0 60 4 5"
 
   describe "parseInstruction of general invalid instructions" $ do
     it "handles empty command" $ do
@@ -283,7 +283,7 @@ binaryInstructionsTwo =
     "1 0 110000 011 011",
     "1 0 001101 100 100",
     "1 0 001111 101 101",
-    "1 0 011111 111 110",
+    "1 0 011111 110 110",
     "1 0 010101 111 111"
   ]
   

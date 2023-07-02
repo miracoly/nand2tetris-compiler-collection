@@ -2,7 +2,7 @@
 
 module Hack.Assembler.Internal (module Hack.Assembler.Internal) where
 
-import Control.Applicative (ZipList (..), liftA2, (<|>))
+import Control.Applicative ((<|>))
 import Control.Monad (join)
 import Data.List as L (head, length)
 import Data.Maybe (fromMaybe)
@@ -33,15 +33,15 @@ data Instruction
 
 instance Show Instruction where
   show i = case i of
-    A' n -> "A " <> showBin n ""
-    C' a c d j -> "C " <> unwords (getZipList $ liftA2 showBin (ZipList [a, c, d, j]) $ ZipList $ repeat "")
+    A' n -> "A " <> show n
+    C' a c d j -> "C " <> unwords (show <$> [a, c, d, j])
 
 type ParseErrorDescription = String
 
 binary :: Instruction -> Text
 binary i = case i of
   A' n -> "0 " <> T.pack (printf "%015b" n)
-  C' a c d j -> "1 " <> T.pack (unwords (getZipList $ liftA2 showBin (ZipList [a, c, d, j]) $ ZipList $ repeat ""))
+  C' a c d j -> "1 " <> T.pack (unwords [showBin a "", printf "%06b" c, printf "%03b" d, printf "%03b" j])
 
 -- | Parse single Instruction and return 'Data.Either.Right' 'Instruction' if instruction could be parsed,
 -- otherwise 'Data.Either.Left' 'ParseErrorDescription'.
