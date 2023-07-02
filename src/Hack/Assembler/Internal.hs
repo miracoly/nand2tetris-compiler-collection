@@ -6,11 +6,11 @@ import Control.Applicative ((<|>))
 import Control.Monad (join)
 import Data.List as L (head, length)
 import Data.Maybe (fromMaybe)
-import Data.Text as T (Text, elem, filter, head, length, lines, null, split, strip, stripSuffix, tail, take, unlines, unpack, pack)
+import Data.Text as T (Text, elem, filter, head, length, lines, null, pack, split, strip, stripSuffix, tail, take, unlines, unpack, stripPrefix, isPrefixOf, drop, dropEnd)
 import Data.Text.Read (Reader, decimal)
 import Numeric (showBin)
-import Prelude as P hiding (dropWhile, length, lines, null, span, take, unlines)
 import Text.Printf (printf)
+import Prelude as P hiding (dropWhile, length, lines, null, span, take, unlines)
 
 -- | Represent CPU Instruction of Hack Computer.
 --
@@ -108,6 +108,43 @@ splitCompAndJump f t = f comp jump
     jump = if L.length secondSplit == 2 then Just (secondSplit !! 1) else Nothing
     secondSplit = T.split (== ';') t
 
+-- | Hack assembly has predefined memory addresses and also allows user defined variables.
+-- Converts all symbols into their dedicated memory addresses or free memory addresses.
+convertSymbols :: Text -> Text
+convertSymbols = T.unlines . fmap convertAInstr . T.lines
+  where
+    convertAInstr t = maybe t convertSymbol $ T.stripPrefix "@" t
+    convertSymbol t = (<>) "@" . maybe t (T.pack . show) $ lookup t symbolLUT
+    symbolLUT = virtualRegistersLUT <> predefinedPointersLUT <> ioPointersLUT
+    
+buildLabelLUT :: [Text] -> ([Text], [(Text, Int)])
+buildLabelLUT txts = (removeLabels txts, buildLUT 0 txts [])
+  where
+    removeLabels = P.filter (not . T.isPrefixOf "(")
+    buildLUT :: Int -> [Text] -> [(Text, Int)] -> [(Text, Int)]
+    buildLUT _ [] acc = acc 
+    buildLUT i (t:tx) acc
+      | T.isPrefixOf "(" t = buildLUT i tx $ ((T.dropEnd 1 . T.drop 1) t, i) : acc
+      | otherwise = buildLUT (i+1) tx acc
+      
+-- | Remove whitespaces, empty lines and comments.
+cleanUpCode :: Text -> Text
+cleanUpCode =
+  fromMaybe ""
+    . stripSuffix "\n"
+    . unlines
+    . P.filter isCode
+    . T.lines
+    . T.filter (/= ' ')
+
+-- | Return True if Text does NOT contain any white spaces, new lines or comments, otherwise False.
+isCode :: Text -> Bool
+isCode = and . fmap not . sequenceA [isComment, (== ""), (== "\n"), T.elem ' ', T.elem '\n']
+
+-- | Return True if Text is comment, otherwise False.
+isComment :: Text -> Bool
+isComment = (== "//") . take 2 . strip
+
 -- | Lookup table for __A=0__ ('_a') computation command which represents '_comp' of 'Instruction'.
 computationAZeroLUT :: [(Text, Int)]
 computationAZeroLUT =
@@ -169,20 +206,37 @@ jumpLUT =
     ("JMP", 7)
   ]
 
--- | Remove whitespaces, empty lines and comments.
-cleanUpCode :: Text -> Text
-cleanUpCode =
-  fromMaybe ""
-    . stripSuffix "\n"
-    . unlines
-    . P.filter isCode
-    . T.lines
-    . T.filter (/= ' ')
-
--- | Return True if Text does NOT contain any white spaces, new lines or comments, otherwise False.
-isCode :: Text -> Bool
-isCode = and . fmap not . sequenceA [isComment, (== ""), (== "\n"), T.elem ' ', T.elem '\n']
-
--- | Return True if Text is comment, otherwise False.
-isComment :: Text -> Bool
-isComment = (== "//") . take 2 . strip
+virtualRegistersLUT :: [(Text, Int)]
+virtualRegistersLUT =
+  [ ("R0", 0),
+    ("R1", 1),
+    ("R2", 2),
+    ("R3", 3),
+    ("R4", 4),
+    ("R5", 5),
+    ("R6", 6),
+    ("R7", 7),
+    ("R8", 8),
+    ("R9", 9),
+    ("R10", 10),
+    ("R11", 11),
+    ("R12", 12),
+    ("R13", 13),
+    ("R14", 14),
+    ("R15", 15)
+  ]
+  
+predefinedPointersLUT :: [(Text, Int)]
+predefinedPointersLUT =
+  [ ("SP", 0),
+    ("LCL", 1),
+    ("ARG", 2),
+    ("THIS", 3),
+    ("THAT", 4)
+  ]
+  
+ioPointersLUT :: [(Text, Int)]
+ioPointersLUT =
+  [ ("SCREEN", 16384),
+    ("KBD", 24576)
+  ]

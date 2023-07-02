@@ -4,9 +4,9 @@
 module Hack.AssemblerSpec (spec) where
 
 import Data.Either
-import Data.Text as T (Text, pack)
+import Data.Text as T (Text, lines, pack, unlines)
 import Hack.Assembler (machineCode, parse)
-import Hack.Assembler.Internal (CInstrSplit (..), Instruction (..), binary, cleanUpCode, isCode, isComment, parseInstruction, splitCInstr)
+import Hack.Assembler.Internal (CInstrSplit (..), Instruction (..), binary, buildLabelLUT, cleanUpCode, convertSymbols, isCode, isComment, parseInstruction, splitCInstr)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
 import Test.QuickCheck (elements, forAll, listOf1, property)
 import Test.QuickCheck.Instances.Text ()
@@ -173,6 +173,18 @@ spec = do
       splitCInstr "AD=!D;JLE" `shouldBe` CInstrSplit' (Just "AD") (Just "!D") (Just "JLE")
       splitCInstr "AMD=D&A;JMP" `shouldBe` CInstrSplit' (Just "AMD") (Just "D&A") (Just "JMP")
 
+  describe "convertSymbols" $ do
+    it "converts virtual registers" $ do
+      convertSymbols exampleVirtualRegisters `shouldBe` exampleVirtualRegistersConverted
+    it "converts predefined pointers" $ do
+      convertSymbols examplePredefinedPointers `shouldBe` examplePredefinedPointersConverted
+    it "converts IO pointers" $ do
+      convertSymbols exampleIOPointers `shouldBe` exampleIOPointersConverted
+
+  describe "buildLabelLUT" $ do
+    it "creates label LUT and returns text with labels removed" $ do
+      buildLabelLUT (T.lines exampleLabelText) `shouldBe` (T.lines exampleLabelTextRemoved, exampleLabelTextLUT)
+
   describe "cleanUpCode" $ do
     it "can handle empty text" $ do
       cleanUpCode "" `shouldBe` ""
@@ -315,3 +327,103 @@ binaryInstructionsThree =
     "0 000000000000000",
     "0 000000001101111"
   ]
+
+exampleVirtualRegisters :: Text
+exampleVirtualRegisters =
+  [r|@R0
+@R1
+@R2
+@R3
+@R4
+@R5
+@R6
+@R7
+@R8
+@R9
+@R10
+@R11
+@R12
+@R13
+@R14
+@R15
+|]
+
+exampleVirtualRegistersConverted :: Text
+exampleVirtualRegistersConverted = genAddressInstr 15
+
+examplePredefinedPointers :: Text
+examplePredefinedPointers =
+  [r|@SP
+@LCL
+@ARG
+@THIS
+@THAT
+|]
+
+examplePredefinedPointersConverted :: Text
+examplePredefinedPointersConverted = genAddressInstr 4
+
+exampleIOPointers :: Text
+exampleIOPointers =
+  [r|@SCREEN
+@KBD|]
+
+exampleIOPointersConverted :: Text
+exampleIOPointersConverted =
+  [r|@16384
+@24576
+|]
+
+exampleLabelText :: Text
+exampleLabelText =
+  [r|@i
+M=0
+@R2
+M=0
+(LOOP)
+@R1
+D=M
+@i
+D=D-M
+@END
+D;JEQ
+@R0
+D=M
+@R2
+M=D+M
+@i
+M=M+1
+@LOOP
+D;JMP
+(END)
+@END
+0;JMP|]
+
+exampleLabelTextRemoved :: Text
+exampleLabelTextRemoved =
+  [r|@i
+M=0
+@R2
+M=0
+@R1
+D=M
+@i
+D=D-M
+@END
+D;JEQ
+@R0
+D=M
+@R2
+M=D+M
+@i
+M=M+1
+@LOOP
+D;JMP
+@END
+0;JMP|]
+
+exampleLabelTextLUT :: [(Text, Int)]
+exampleLabelTextLUT = [("END", 18), ("LOOP", 4)]
+
+genAddressInstr :: Int -> Text
+genAddressInstr n = T.unlines ["@" <> T.pack (show x) | x <- [0 .. n :: Int]]
