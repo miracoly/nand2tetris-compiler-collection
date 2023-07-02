@@ -4,9 +4,9 @@
 module Hack.AssemblerSpec (spec) where
 
 import Data.Either
-import Data.Text (Text, pack)
-import Hack.Assembler (parse)
-import Hack.Assembler.Internal (CInstrSplit (..), Instruction (..), cleanUpCode, isCode, isComment, parseInstruction, splitCInstr, binary)
+import Data.Text as T (Text, pack)
+import Hack.Assembler (machineCode, parse)
+import Hack.Assembler.Internal (CInstrSplit (..), Instruction (..), binary, cleanUpCode, isCode, isComment, parseInstruction, splitCInstr)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
 import Test.QuickCheck (elements, forAll, listOf1, property)
 import Test.QuickCheck.Instances.Text ()
@@ -34,6 +34,10 @@ spec = do
     it "handles address bigger than 15 bit" $ do
       parseInstruction "@32768" `shouldSatisfy` isLeft
 
+  describe "machineCode" $ do
+    it "translates various instructions" $ do
+      machineCode exampleInstructionsTwo `shouldBe` machineCodeTwo
+
   describe "parse" $ do
     it "parses empty text" $ do
       parse "" `shouldBe` Right []
@@ -42,7 +46,7 @@ spec = do
       parse exampleInstructionsTextTwo `shouldBe` Right exampleInstructionsTwo
     it "handles errors" $ do
       parse "bla\nblub" `shouldSatisfy` isLeft
-      
+
   describe "binary" $ do
     it "shows binary representation of instruction" $ do
       fmap binary exampleInstructionsTwo `shouldBe` binaryInstructionsTwo
@@ -277,7 +281,7 @@ exampleInstructionsTwo =
   ]
 
 binaryInstructionsTwo :: [Text]
-binaryInstructionsTwo = 
+binaryInstructionsTwo =
   [ "1 0 101010 001 001",
     "1 0 111010 010 010",
     "1 0 110000 011 011",
@@ -286,17 +290,27 @@ binaryInstructionsTwo =
     "1 0 011111 110 110",
     "1 0 010101 111 111"
   ]
-  
+
+machineCodeTwo :: Text
+machineCodeTwo =
+  [r|10101010001001
+10111010010010
+10110000011011
+10001101100100
+10001111101101
+10011111110110
+10010101111111
+|]
+
 exampleInstructionsThree :: [Instruction]
 exampleInstructionsThree =
-  [
-    A' 32767,
+  [ A' 32767,
     A' 0,
     A' 111
   ]
 
 binaryInstructionsThree :: [Text]
-binaryInstructionsThree = 
+binaryInstructionsThree =
   [ "0 111111111111111",
     "0 000000000000000",
     "0 000000001101111"
