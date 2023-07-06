@@ -112,20 +112,23 @@ splitCompAndJump f t = f comp jump
 -- | Hack assembly has predefined memory addresses and also allows user defined variables.
 -- Converts all symbols into their dedicated memory addresses or free memory addresses.
 convertSymbols :: [Text] -> [Text]
-convertSymbols = fmap convertAInstr
-  where
-    convertAInstr t = maybe t convertSymbol $ T.stripPrefix "@" t
-    convertSymbol t = (<>) "@" . maybe t (T.pack . show) $ lookup t symbolLUT
-    symbolLUT = virtualRegistersLUT <> predefinedPointersLUT <> ioPointersLUT
-    
+convertSymbols =
+  let symbolLUT = virtualRegistersLUT <> predefinedPointersLUT <> ioPointersLUT
+   in fmap $ convertSymbolFromLUT symbolLUT
+
 convertVariables :: [Text] -> [Text]
 convertVariables = undefined
 
 convertLabels :: [Text] -> [Text]
-convertLabels tx = undefined
+convertLabels tx =
+  let (ntx, lut) = buildLabelLUT tx
+   in fmap (convertSymbolFromLUT lut) ntx
+
+convertSymbolFromLUT :: [(Text, Int)] -> Text -> Text
+convertSymbolFromLUT lut = convertAInstr
   where
-    (ntx, lut) = buildLabelLUT tx
-    bla = undefined
+    convertAInstr t = maybe t convertSymbol $ T.stripPrefix "@" t
+    convertSymbol t = (<>) "@" . maybe t (T.pack . show) $ lookup t lut
 
 buildVariableLUT :: [Text] -> [(Text, Int)]
 buildVariableLUT = buildLUT 16 []
@@ -136,7 +139,7 @@ buildVariableLUT = buildLUT 16 []
       | isVariable t && isNew t acc = buildLUT (addr + 1) ((T.drop 1 t, addr) : acc) tx
       | otherwise = buildLUT addr acc tx
     isVariable txt = T.isPrefixOf "@" txt && T.all isLower (T.drop 1 txt) && not (T.any isSpace txt)
-    isNew txt = isNothing . lookup (T.drop 1 txt) 
+    isNew txt = isNothing . lookup (T.drop 1 txt)
 
 buildLabelLUT :: [Text] -> ([Text], [(Text, Int)])
 buildLabelLUT txts = (removeLabels txts, buildLUT 0 txts [])
@@ -151,7 +154,7 @@ buildLabelLUT txts = (removeLabels txts, buildLUT 0 txts [])
 -- | Remove whitespaces, empty lines and comments.
 cleanUpCode :: Text -> [Text]
 cleanUpCode =
-    P.filter isCode
+  P.filter isCode
     . T.lines
     . T.filter (/= ' ')
 
