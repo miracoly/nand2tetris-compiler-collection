@@ -108,11 +108,14 @@ splitCompAndJump f t = f comp jump
     comp = if L.length secondSplit <= 2 then Just (L.head secondSplit) else Nothing
     jump = if L.length secondSplit == 2 then Just (secondSplit !! 1) else Nothing
     secondSplit = T.split (== ';') t
+    
+convertSymbols :: [Text] -> [Text]
+convertSymbols = convertPredefinedSymbols . convertVariables . convertLabels
 
 -- | Hack assembly has predefined memory addresses and also allows user defined variables.
 -- Converts all symbols into their dedicated memory addresses or free memory addresses.
-convertSymbols :: [Text] -> [Text]
-convertSymbols =
+convertPredefinedSymbols :: [Text] -> [Text]
+convertPredefinedSymbols =
   let symbolLUT = virtualRegistersLUT <> predefinedPointersLUT <> ioPointersLUT
    in fmap $ convertSymbolFromLUT symbolLUT
 

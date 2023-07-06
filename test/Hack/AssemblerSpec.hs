@@ -6,7 +6,7 @@ module Hack.AssemblerSpec (spec) where
 import Data.Either
 import Data.Text as T (Text, lines, pack, unlines)
 import Hack.Assembler (machineCode, parse)
-import Hack.Assembler.Internal (CInstrSplit (..), Instruction (..), binary, buildLabelLUT, buildVariableLUT, cleanUpCode, convertSymbols, isCode, isComment, parseInstruction, splitCInstr, convertLabels, convertVariables)
+import Hack.Assembler.Internal (CInstrSplit (..), Instruction (..), binary, buildLabelLUT, buildVariableLUT, cleanUpCode, convertPredefinedSymbols, isCode, isComment, parseInstruction, splitCInstr, convertLabels, convertVariables)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
 import Test.QuickCheck (elements, forAll, listOf1, property)
 import Test.QuickCheck.Instances.Text ()
@@ -175,20 +175,20 @@ spec = do
 
   describe "convertSymbols" $ do
     it "converts virtual registers" $ do
-      convertSymbols (T.lines exampleVirtualRegisters) `shouldBe` T.lines exampleVirtualRegistersConverted
+      convertPredefinedSymbols (T.lines exampleVirtualRegisters) `shouldBe` T.lines exampleVirtualRegistersConverted
     it "converts predefined pointers" $ do
-      convertSymbols (T.lines examplePredefinedPointers) `shouldBe` T.lines examplePredefinedPointersConverted
+      convertPredefinedSymbols (T.lines examplePredefinedPointers) `shouldBe` T.lines examplePredefinedPointersConverted
     it "converts IO pointers" $ do
-      convertSymbols (T.lines exampleIOPointers) `shouldBe` T.lines exampleIOPointersConverted
+      convertPredefinedSymbols (T.lines exampleIOPointers) `shouldBe` T.lines exampleIOPointersConverted
 
   describe "convertLabels" $ do
     it "converts labels to addresses" $ do
       convertLabels (T.lines exampleLabelText) `shouldBe` T.lines exampleLabelTextConverted
-      
+
   describe "convertVariables" $ do
     it "converts variables to addresses" $ do
       convertVariables (T.lines exampleVariableText) `shouldBe` T.lines exampleVariableConverted
-      
+
   describe "buildVariableLUT" $ do
     it "creates variable LUT" $ do
       buildVariableLUT (T.lines exampleVariableText) `shouldBe` exampleVariableLUT
