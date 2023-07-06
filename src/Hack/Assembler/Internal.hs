@@ -4,9 +4,10 @@ module Hack.Assembler.Internal (module Hack.Assembler.Internal) where
 
 import Control.Applicative ((<|>))
 import Control.Monad (join)
+import Data.Char (isLower, isSpace)
 import Data.List as L (head, length)
-import Data.Maybe (fromMaybe)
-import Data.Text as T (Text, elem, filter, head, length, lines, null, pack, split, strip, stripSuffix, tail, take, unlines, unpack, stripPrefix, isPrefixOf, drop, dropEnd)
+import Data.Maybe (fromMaybe, isNothing)
+import Data.Text as T (Text, all, any, drop, dropEnd, elem, filter, head, isPrefixOf, length, lines, null, pack, split, strip, stripPrefix, stripSuffix, tail, take, unlines, unpack)
 import Data.Text.Read (Reader, decimal)
 import Numeric (showBin)
 import Text.Printf (printf)
@@ -117,16 +118,33 @@ convertSymbols = T.unlines . fmap convertAInstr . T.lines
     convertSymbol t = (<>) "@" . maybe t (T.pack . show) $ lookup t symbolLUT
     symbolLUT = virtualRegistersLUT <> predefinedPointersLUT <> ioPointersLUT
     
+convertVariables :: Text -> Text
+convertVariables = undefined
+
+convertLabels :: Text -> Text
+convertLabels = undefined
+
+buildVariableLUT :: [Text] -> [(Text, Int)]
+buildVariableLUT = buildLUT 16 []
+  where
+    buildLUT :: Int -> [(Text, Int)] -> [Text] -> [(Text, Int)]
+    buildLUT _ acc [] = acc
+    buildLUT addr acc (t : tx)
+      | isVariable t && isNew t acc = buildLUT (addr + 1) ((T.drop 1 t, addr) : acc) tx
+      | otherwise = buildLUT addr acc tx
+    isVariable txt = T.isPrefixOf "@" txt && T.all isLower (T.drop 1 txt) && not (T.any isSpace txt)
+    isNew txt = isNothing . lookup (T.drop 1 txt) 
+
 buildLabelLUT :: [Text] -> ([Text], [(Text, Int)])
 buildLabelLUT txts = (removeLabels txts, buildLUT 0 txts [])
   where
     removeLabels = P.filter (not . T.isPrefixOf "(")
     buildLUT :: Int -> [Text] -> [(Text, Int)] -> [(Text, Int)]
-    buildLUT _ [] acc = acc 
-    buildLUT i (t:tx) acc
+    buildLUT _ [] acc = acc
+    buildLUT i (t : tx) acc
       | T.isPrefixOf "(" t = buildLUT i tx $ ((T.dropEnd 1 . T.drop 1) t, i) : acc
-      | otherwise = buildLUT (i+1) tx acc
-      
+      | otherwise = buildLUT (i + 1) tx acc
+
 -- | Remove whitespaces, empty lines and comments.
 cleanUpCode :: Text -> Text
 cleanUpCode =
@@ -225,7 +243,7 @@ virtualRegistersLUT =
     ("R14", 14),
     ("R15", 15)
   ]
-  
+
 predefinedPointersLUT :: [(Text, Int)]
 predefinedPointersLUT =
   [ ("SP", 0),
@@ -234,7 +252,7 @@ predefinedPointersLUT =
     ("THIS", 3),
     ("THAT", 4)
   ]
-  
+
 ioPointersLUT :: [(Text, Int)]
 ioPointersLUT =
   [ ("SCREEN", 16384),

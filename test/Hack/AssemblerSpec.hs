@@ -6,7 +6,7 @@ module Hack.AssemblerSpec (spec) where
 import Data.Either
 import Data.Text as T (Text, lines, pack, unlines)
 import Hack.Assembler (machineCode, parse)
-import Hack.Assembler.Internal (CInstrSplit (..), Instruction (..), binary, buildLabelLUT, cleanUpCode, convertSymbols, isCode, isComment, parseInstruction, splitCInstr)
+import Hack.Assembler.Internal (CInstrSplit (..), Instruction (..), binary, buildLabelLUT, buildVariableLUT, cleanUpCode, convertSymbols, isCode, isComment, parseInstruction, splitCInstr)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
 import Test.QuickCheck (elements, forAll, listOf1, property)
 import Test.QuickCheck.Instances.Text ()
@@ -180,6 +180,10 @@ spec = do
       convertSymbols examplePredefinedPointers `shouldBe` examplePredefinedPointersConverted
     it "converts IO pointers" $ do
       convertSymbols exampleIOPointers `shouldBe` exampleIOPointersConverted
+
+  describe "buildVariableLUT" $ do
+    it "creates variable LUT" $ do
+      buildVariableLUT (T.lines exampleVariableText) `shouldBe` exampleVariableLUT
 
   describe "buildLabelLUT" $ do
     it "creates label LUT and returns text with labels removed" $ do
@@ -424,6 +428,38 @@ D;JMP
 
 exampleLabelTextLUT :: [(Text, Int)]
 exampleLabelTextLUT = [("END", 18), ("LOOP", 4)]
+
+exampleVariableText :: Text
+exampleVariableText =
+  [r|@i
+M=0
+@R2
+@var
+M=0
+@k
+(LOOP)
+@R1
+D=M
+@i
+D=D-M
+@END
+@k
+D;JEQ
+@R0
+D=M
+@R2
+M=D+M
+@i
+M=M+1
+@LOOP
+@var
+D;JMP
+(END)
+@END
+0;JMP|]
+
+exampleVariableLUT :: [(Text, Int)]
+exampleVariableLUT = [("k", 18), ("var", 17), ("i", 16)]
 
 genAddressInstr :: Int -> Text
 genAddressInstr n = T.unlines ["@" <> T.pack (show x) | x <- [0 .. n :: Int]]
