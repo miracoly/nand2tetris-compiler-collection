@@ -117,12 +117,10 @@ convertSymbols =
    in fmap $ convertSymbolFromLUT symbolLUT
 
 convertVariables :: [Text] -> [Text]
-convertVariables = undefined
+convertVariables tx = let lut = buildVariableLUT tx in fmap (convertSymbolFromLUT lut) tx
 
 convertLabels :: [Text] -> [Text]
-convertLabels tx =
-  let (ntx, lut) = buildLabelLUT tx
-   in fmap (convertSymbolFromLUT lut) ntx
+convertLabels tx = let (ntx, lut) = buildLabelLUT tx in fmap (convertSymbolFromLUT lut) ntx
 
 convertSymbolFromLUT :: [(Text, Int)] -> Text -> Text
 convertSymbolFromLUT lut = convertAInstr

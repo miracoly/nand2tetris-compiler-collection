@@ -6,7 +6,7 @@ module Hack.AssemblerSpec (spec) where
 import Data.Either
 import Data.Text as T (Text, lines, pack, unlines)
 import Hack.Assembler (machineCode, parse)
-import Hack.Assembler.Internal (CInstrSplit (..), Instruction (..), binary, buildLabelLUT, buildVariableLUT, cleanUpCode, convertSymbols, isCode, isComment, parseInstruction, splitCInstr, convertLabels)
+import Hack.Assembler.Internal (CInstrSplit (..), Instruction (..), binary, buildLabelLUT, buildVariableLUT, cleanUpCode, convertSymbols, isCode, isComment, parseInstruction, splitCInstr, convertLabels, convertVariables)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
 import Test.QuickCheck (elements, forAll, listOf1, property)
 import Test.QuickCheck.Instances.Text ()
@@ -184,6 +184,10 @@ spec = do
   describe "convertLabels" $ do
     it "converts labels to addresses" $ do
       convertLabels (T.lines exampleLabelText) `shouldBe` T.lines exampleLabelTextConverted
+      
+  describe "convertVariables" $ do
+    it "converts variables to addresses" $ do
+      convertVariables (T.lines exampleVariableText) `shouldBe` T.lines exampleVariableConverted
       
   describe "buildVariableLUT" $ do
     it "creates variable LUT" $ do
@@ -480,6 +484,35 @@ M=D+M
 M=M+1
 @LOOP
 @var
+D;JMP
+(END)
+@END
+0;JMP|]
+
+exampleVariableConverted :: Text
+exampleVariableConverted =
+  [r|@16
+M=0
+@R2
+@17
+M=0
+@18
+(LOOP)
+@R1
+D=M
+@16
+D=D-M
+@END
+@18
+D;JEQ
+@R0
+D=M
+@R2
+M=D+M
+@16
+M=M+1
+@LOOP
+@17
 D;JMP
 (END)
 @END
