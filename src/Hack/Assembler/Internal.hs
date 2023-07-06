@@ -111,18 +111,21 @@ splitCompAndJump f t = f comp jump
 
 -- | Hack assembly has predefined memory addresses and also allows user defined variables.
 -- Converts all symbols into their dedicated memory addresses or free memory addresses.
-convertSymbols :: Text -> Text
-convertSymbols = T.unlines . fmap convertAInstr . T.lines
+convertSymbols :: [Text] -> [Text]
+convertSymbols = fmap convertAInstr
   where
     convertAInstr t = maybe t convertSymbol $ T.stripPrefix "@" t
     convertSymbol t = (<>) "@" . maybe t (T.pack . show) $ lookup t symbolLUT
     symbolLUT = virtualRegistersLUT <> predefinedPointersLUT <> ioPointersLUT
     
-convertVariables :: Text -> Text
+convertVariables :: [Text] -> [Text]
 convertVariables = undefined
 
-convertLabels :: Text -> Text
-convertLabels = undefined
+convertLabels :: [Text] -> [Text]
+convertLabels tx = undefined
+  where
+    (ntx, lut) = buildLabelLUT tx
+    bla = undefined
 
 buildVariableLUT :: [Text] -> [(Text, Int)]
 buildVariableLUT = buildLUT 16 []
@@ -146,12 +149,9 @@ buildLabelLUT txts = (removeLabels txts, buildLUT 0 txts [])
       | otherwise = buildLUT (i + 1) tx acc
 
 -- | Remove whitespaces, empty lines and comments.
-cleanUpCode :: Text -> Text
+cleanUpCode :: Text -> [Text]
 cleanUpCode =
-  fromMaybe ""
-    . stripSuffix "\n"
-    . unlines
-    . P.filter isCode
+    P.filter isCode
     . T.lines
     . T.filter (/= ' ')
 

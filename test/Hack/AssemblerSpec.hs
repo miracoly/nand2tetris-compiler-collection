@@ -175,11 +175,11 @@ spec = do
 
   describe "convertSymbols" $ do
     it "converts virtual registers" $ do
-      convertSymbols exampleVirtualRegisters `shouldBe` exampleVirtualRegistersConverted
+      convertSymbols (T.lines exampleVirtualRegisters) `shouldBe` T.lines exampleVirtualRegistersConverted
     it "converts predefined pointers" $ do
-      convertSymbols examplePredefinedPointers `shouldBe` examplePredefinedPointersConverted
+      convertSymbols (T.lines examplePredefinedPointers) `shouldBe` T.lines examplePredefinedPointersConverted
     it "converts IO pointers" $ do
-      convertSymbols exampleIOPointers `shouldBe` exampleIOPointersConverted
+      convertSymbols (T.lines exampleIOPointers) `shouldBe` T.lines exampleIOPointersConverted
 
   describe "buildVariableLUT" $ do
     it "creates variable LUT" $ do
@@ -191,18 +191,18 @@ spec = do
 
   describe "cleanUpCode" $ do
     it "can handle empty text" $ do
-      cleanUpCode "" `shouldBe` ""
+      cleanUpCode "" `shouldBe` []
     it "can handle one line" $ do
-      cleanUpCode "a" `shouldBe` "a"
+      cleanUpCode "a" `shouldBe` ["a"]
     it "can handle two lines" $ do
-      cleanUpCode "a\nb b" `shouldBe` "a\nbb"
-      cleanUpCode "a \n b b" `shouldBe` "a\nbb"
+      cleanUpCode "a\nb b" `shouldBe` ["a","bb"]
+      cleanUpCode "a \n b b" `shouldBe` ["a","bb"]
     it "can handle multiple new lines" $ do
-      cleanUpCode "a \n\n b\n \n b" `shouldBe` "a\nb\nb"
+      cleanUpCode "a \n\n b\n \n b" `shouldBe` ["a", "b", "b"]
     it "can remove comments" $ do
-      cleanUpCode "a\n// i am a comment" `shouldBe` "a"
-      cleanUpCode "a\n// i am a comment\nabc" `shouldBe` "a\nabc"
-      cleanUpCode "a \n // i am a comment \n abc " `shouldBe` "a\nabc"
+      cleanUpCode "a\n// i am a comment" `shouldBe` ["a"]
+      cleanUpCode "a\n// i am a comment\nabc" `shouldBe` ["a", "abc"]
+      cleanUpCode "a \n // i am a comment \n abc " `shouldBe` ["a", "abc"]
 
   describe "isCode" $ do
     it "detects code" $
