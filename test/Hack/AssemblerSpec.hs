@@ -5,8 +5,8 @@ module Hack.AssemblerSpec (spec) where
 
 import Data.Either
 import Data.Text as T (Text, lines, pack, unlines)
-import Hack.Assembler (machineCode, parse, compile)
-import Hack.Assembler.Internal (CInstrSplit (..), Instruction (..), binary, buildLabelLUT, buildVariableLUT, cleanUpCode, convertPredefinedSymbols, isCode, isComment, parseInstruction, splitCInstr, convertLabels, convertVariables)
+import Hack.Assembler (compile, machineCode, parse)
+import Hack.Assembler.Internal (CInstrSplit (..), Instruction (..), binary, buildLabelLUT, buildVariableLUT, cleanUpCode, convertLabels, convertPredefinedSymbols, convertSymbols, convertVariables, isCode, isComment, parseInstruction, splitCInstr)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
 import Test.QuickCheck (elements, forAll, listOf1, property)
 import Test.QuickCheck.Instances.Text ()
@@ -18,7 +18,10 @@ spec = do
     it "compiles assembly into machine code" $ do
       compile exampleAssemblyOne `shouldBe` Right exampleCompiledOne
       compile exampleAssemblyTwo `shouldBe` Right exampleCompiledTwo
-  
+      compile exampleAssemblyAdd `shouldBe` Right exampleCompiledAdd
+      compile exampleAssemblyMax `shouldBe` Right exampleCompiledMax
+      compile exampleAssemblyRect `shouldBe` Right exampleCompiledRect
+
   describe "Binary is member of Read class" $ do
     it "shows A Instruction" $ do
       show (A' 12) `shouldBe` "A 12"
@@ -185,6 +188,8 @@ spec = do
       convertPredefinedSymbols (T.lines examplePredefinedPointers) `shouldBe` T.lines examplePredefinedPointersConverted
     it "converts IO pointers" $ do
       convertPredefinedSymbols (T.lines exampleIOPointers) `shouldBe` T.lines exampleIOPointersConverted
+    it "keeps korrekt addresses" $ do
+      convertSymbols (T.lines exampleAlreadyCorrectAddresses) `shouldBe` T.lines exampleAlreadyCorrectAddresses
 
   describe "convertLabels" $ do
     it "converts labels to addresses" $ do
@@ -208,14 +213,16 @@ spec = do
     it "can handle one line" $ do
       cleanUpCode "a" `shouldBe` ["a"]
     it "can handle two lines" $ do
-      cleanUpCode "a\nb b" `shouldBe` ["a","bb"]
-      cleanUpCode "a \n b b" `shouldBe` ["a","bb"]
+      cleanUpCode "a\nb b" `shouldBe` ["a", "bb"]
+      cleanUpCode "a \n b b" `shouldBe` ["a", "bb"]
     it "can handle multiple new lines" $ do
       cleanUpCode "a \n\n b\n \n b" `shouldBe` ["a", "b", "b"]
     it "can remove comments" $ do
       cleanUpCode "a\n// i am a comment" `shouldBe` ["a"]
       cleanUpCode "a\n// i am a comment\nabc" `shouldBe` ["a", "abc"]
       cleanUpCode "a \n // i am a comment \n abc " `shouldBe` ["a", "abc"]
+    it "cleans up example code" $ do
+      cleanUpCode exampleCleanUpBefore `shouldBe` exampleCleanUpAfter
 
   describe "isCode" $ do
     it "detects code" $
@@ -228,6 +235,7 @@ spec = do
     it "detects white spaces" $ do
       isCode " a" `shouldBe` False
       isCode "a " `shouldBe` False
+      isCode "\n" `shouldBe` False
 
   describe "isComment" $ do
     it "can handle empty text" $ do
@@ -240,6 +248,33 @@ spec = do
       isComment "//" `shouldBe` True
       isComment "// jfal;kfja;lf" `shouldBe` True
       isComment "  // jfal;kfja;lf" `shouldBe` True
+
+exampleCleanUpBefore :: Text
+exampleCleanUpBefore =
+  [r|// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/06/add/Add.asm
+
+// Computes R0 = 2 + 3  (R0 refers to RAM[0])
+
+@2
+D=A
+@3
+D=D+A
+@0
+M=D
+|]
+
+exampleCleanUpAfter :: [Text]
+exampleCleanUpAfter =
+  [ "@2",
+    "D=A",
+    "@3",
+    "D=D+A",
+    "@0",
+    "M=D"
+  ]
 
 exampleInstructionsTextOne :: Text
 exampleInstructionsTextOne =
@@ -390,6 +425,15 @@ exampleIOPointersConverted =
   [r|@16384
 @24576
 |]
+
+exampleAlreadyCorrectAddresses :: Text
+exampleAlreadyCorrectAddresses =
+  [r|@2
+D=A
+@3
+D=D+A
+@0
+M=D|]
 
 exampleLabelText :: Text
 exampleLabelText =
@@ -574,9 +618,9 @@ exampleAssemblyOne =
 (END)
   @END
   0;JMP|]
-  
+
 exampleCompiledOne :: Text
-exampleCompiledOne = 
+exampleCompiledOne =
   [r|0000000000010000
 1110101010001000
 0000000000000010
@@ -609,7 +653,7 @@ exampleAssemblyTwo =
 // Runs an infinite loop that listens to the keyboard input.
 // When a key is pressed (any key), the program blackens the screen,
 // i.e. writes "black" in every pixel;
-// the screen should remain fully black as long as the key is pressed. 
+// the screen should remain fully black as long as the key is pressed.
 // When no key is pressed, the program clears the screen, i.e. writes
 // "white" in every pixel;
 // the screen should remain fully clear as long as no key is pressed.
@@ -675,7 +719,7 @@ exampleAssemblyTwo =
     M=M+1
     @SETSCREENPART
     0;JMP|]
-    
+
 exampleCompiledTwo :: Text
 exampleCompiledTwo =
   [r|0110000000000000
@@ -724,3 +768,148 @@ exampleCompiledTwo =
 0000000000011110
 1110101010000111
 |]
+
+exampleAssemblyAdd :: Text
+exampleAssemblyAdd =
+  [r|// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/06/add/Add.asm
+
+// Computes R0 = 2 + 3  (R0 refers to RAM[0])
+
+@2
+D=A
+@3
+D=D+A
+@0
+M=D|]
+
+exampleCompiledAdd :: Text
+exampleCompiledAdd =
+  [r|0000000000000010
+1110110000010000
+0000000000000011
+1110000010010000
+0000000000000000
+1110001100001000
+|]
+
+exampleAssemblyMax :: Text
+exampleAssemblyMax =
+  [r|// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/06/max/Max.asm
+
+// Computes R2 = max(R0, R1)  (R0,R1,R2 refer to RAM[0],RAM[1],RAM[2])
+
+   @R0
+   D=M              // D = first number
+   @R1
+   D=D-M            // D = first number - second number
+   @OUTPUT_FIRST
+   D;JGT            // if D>0 (first is greater) goto output_first
+   @R1
+   D=M              // D = second number
+   @OUTPUT_D
+   0;JMP            // goto output_d
+(OUTPUT_FIRST)
+   @R0
+   D=M              // D = first number
+(OUTPUT_D)
+   @R2
+   M=D              // M[2] = D (greatest number)
+(INFINITE_LOOP)
+   @INFINITE_LOOP
+   0;JMP            // infinite loop
+|]
+
+exampleCompiledMax :: Text
+exampleCompiledMax =
+  [r|0000000000000000
+1111110000010000
+0000000000000001
+1111010011010000
+0000000000001010
+1110001100000001
+0000000000000001
+1111110000010000
+0000000000001100
+1110101010000111
+0000000000000000
+1111110000010000
+0000000000000010
+1110001100001000
+0000000000001110
+1110101010000111
+|]
+
+exampleAssemblyRect :: Text
+exampleAssemblyRect =
+  [r|// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/06/rect/Rect.asm
+
+// Draws a rectangle at the top-left corner of the screen.
+// The rectangle is 16 pixels wide and R0 pixels high.
+
+   @0
+   D=M
+   @INFINITE_LOOP
+   D;JLE
+   @counter
+   M=D
+   @SCREEN
+   D=A
+   @address
+   M=D
+(LOOP)
+   @address
+   A=M
+   M=-1
+   @address
+   D=M
+   @32
+   D=D+A
+   @address
+   M=D
+   @counter
+   MD=M-1
+   @LOOP
+   D;JGT
+(INFINITE_LOOP)
+   @INFINITE_LOOP
+   0;JMP
+|]
+ 
+exampleCompiledRect :: Text
+exampleCompiledRect =
+  [r|0000000000000000
+1111110000010000
+0000000000010111
+1110001100000110
+0000000000010000
+1110001100001000
+0100000000000000
+1110110000010000
+0000000000010001
+1110001100001000
+0000000000010001
+1111110000100000
+1110111010001000
+0000000000010001
+1111110000010000
+0000000000100000
+1110000010010000
+0000000000010001
+1110001100001000
+0000000000010000
+1111110010011000
+0000000000001010
+1110001100000001
+0000000000010111
+1110101010000111
+|]
+ 

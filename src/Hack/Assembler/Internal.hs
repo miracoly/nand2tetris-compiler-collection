@@ -7,7 +7,7 @@ import Control.Monad (join)
 import Data.Char (isLower, isSpace)
 import Data.List as L (head, length)
 import Data.Maybe (fromMaybe, isNothing)
-import Data.Text as T (Text, all, any, drop, dropEnd, elem, filter, head, isPrefixOf, length, lines, null, pack, split, strip, stripPrefix, stripSuffix, tail, take, unlines, unpack)
+import Data.Text as T (Text, any, drop, dropEnd, elem, filter, head, isPrefixOf, length, lines, null, pack, split, strip, stripPrefix, tail, take, unpack, breakOn)
 import Data.Text.Read (Reader, decimal)
 import Numeric (showBin)
 import Text.Printf (printf)
@@ -70,7 +70,7 @@ parseC :: Text -> Either ParseErrorDescription Instruction
 parseC instr = maybe fallBack Right $ parse instr
   where
     parse = fromInstrSplit . splitCInstr
-    fallBack = Left ("Could not parse computation command " <> unpack instr)
+    fallBack = Left ("Could not parse computation command: " <> unpack instr)
 
 fromInstrSplit :: CInstrSplit -> Maybe Instruction
 fromInstrSplit (CInstrSplit' dest comp jmp) = C' <$> a <*> comp' <*> dest' <*> jmp'
@@ -139,7 +139,7 @@ buildVariableLUT = buildLUT 16 []
     buildLUT addr acc (t : tx)
       | isVariable t && isNew t acc = buildLUT (addr + 1) ((T.drop 1 t, addr) : acc) tx
       | otherwise = buildLUT addr acc tx
-    isVariable txt = T.isPrefixOf "@" txt && T.all isLower (T.drop 1 txt) && not (T.any isSpace txt)
+    isVariable txt = T.length txt > 1 && T.isPrefixOf "@" txt && isLower (T.head (T.drop 1 txt)) && not (T.any isSpace txt)
     isNew txt = isNothing . lookup (T.drop 1 txt)
 
 buildLabelLUT :: [Text] -> ([Text], [(Text, Int)])
@@ -155,7 +155,8 @@ buildLabelLUT txts = (removeLabels txts, buildLUT 0 txts [])
 -- | Remove whitespaces, empty lines and comments.
 cleanUpCode :: Text -> [Text]
 cleanUpCode =
-  P.filter isCode
+    P.filter isCode
+    . fmap (fst . T.breakOn "//")
     . T.lines
     . T.filter (/= ' ')
 
