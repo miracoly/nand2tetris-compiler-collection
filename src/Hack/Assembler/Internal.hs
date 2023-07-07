@@ -44,8 +44,6 @@ binary i = case i of
   A' n -> "0 " <> T.pack (printf "%015b" n)
   C' a c d j -> "1 11 " <> T.pack (unwords [showBin a "", printf "%06b" c, printf "%03b" d, printf "%03b" j])
 
--- | Parse single Instruction and return 'Data.Either.Right' 'Instruction' if instruction could be parsed,
--- otherwise 'Data.Either.Left' 'ParseErrorDescription'.
 parseInstruction :: Text -> Either ParseErrorDescription Instruction
 parseInstruction instr
   | T.null instr = Left $ "Could not parse " <> unpack instr
@@ -57,8 +55,6 @@ parseInstruction instr
           '@' -> parseA address
           _ -> parseC instr
 
--- | Parse single __A__ Instruction and return 'Data.Either.Right' 'Instruction' if @'address'@ is between 1 and 32767 (15 Bit),
--- otherwise 'Data.Either.Left' 'ParseErrorDescription'.
 parseA :: Text -> Either ParseErrorDescription Instruction
 parseA address = (decimal :: Reader Int) address >>= toInstr
   where
@@ -109,11 +105,11 @@ splitCompAndJump f t = f comp jump
     jump = if L.length secondSplit == 2 then Just (secondSplit !! 1) else Nothing
     secondSplit = T.split (== ';') t
     
+-- | Hack assembly has predefined memory addresses and also allows user defined variables.
+-- Converts all symbols into their dedicated memory addresses or free memory addresses.
 convertSymbols :: [Text] -> [Text]
 convertSymbols = convertPredefinedSymbols . convertVariables . convertLabels
 
--- | Hack assembly has predefined memory addresses and also allows user defined variables.
--- Converts all symbols into their dedicated memory addresses or free memory addresses.
 convertPredefinedSymbols :: [Text] -> [Text]
 convertPredefinedSymbols =
   let symbolLUT = virtualRegistersLUT <> predefinedPointersLUT <> ioPointersLUT
@@ -152,7 +148,7 @@ buildLabelLUT txts = (removeLabels txts, buildLUT 0 txts [])
       | T.isPrefixOf "(" t = buildLUT i tx $ ((T.dropEnd 1 . T.drop 1) t, i) : acc
       | otherwise = buildLUT (i + 1) tx acc
 
--- | Remove whitespaces, empty lines and comments.
+-- | Remove whitespaces, empty lines, line comments and inline comments.
 cleanUpCode :: Text -> [Text]
 cleanUpCode =
     P.filter isCode

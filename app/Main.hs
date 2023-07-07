@@ -17,10 +17,7 @@ main =
       . listToMaybe
       
 fromStdin :: IO ()
-fromStdin = do
-  content <- Tio.getContents
-  let compiled = either pack id $ compile content
-  Tio.putStr compiled
+fromStdin = Tio.getContents >>= (Tio.putStr . either pack id . compile)
 
 handleSuccess :: Text -> IO ()
-handleSuccess machineCode = putStrLn "Success. Wrote to output.hack" >> Tio.writeFile "output.hack" machineCode
+handleSuccess = (>>) (putStrLn "Success. Wrote to output.hack") . Tio.writeFile "output.hack"
