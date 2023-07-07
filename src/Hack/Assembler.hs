@@ -1,4 +1,4 @@
-module Hack.Assembler (parse, machineCode) where
+module Hack.Assembler (compile, parse, machineCode) where
 
 import Data.Text as T (Text, filter, unlines)
 import Hack.Assembler.Internal

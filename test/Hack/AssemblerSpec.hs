@@ -5,7 +5,7 @@ module Hack.AssemblerSpec (spec) where
 
 import Data.Either
 import Data.Text as T (Text, lines, pack, unlines)
-import Hack.Assembler (machineCode, parse)
+import Hack.Assembler (machineCode, parse, compile)
 import Hack.Assembler.Internal (CInstrSplit (..), Instruction (..), binary, buildLabelLUT, buildVariableLUT, cleanUpCode, convertPredefinedSymbols, isCode, isComment, parseInstruction, splitCInstr, convertLabels, convertVariables)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldSatisfy)
 import Test.QuickCheck (elements, forAll, listOf1, property)
@@ -14,6 +14,10 @@ import Text.RawString.QQ (r)
 
 spec :: Spec
 spec = do
+  describe "compile" $ do
+    it "compiles assembly into machine code" $ do
+      compile exampleAssemblyOne `shouldBe` Right exampleCompiledOne
+  
   describe "Binary is member of Read class" $ do
     it "shows A Instruction" $ do
       show (A' 12) `shouldBe` "A 12"
@@ -306,24 +310,24 @@ exampleInstructionsTwo =
 
 binaryInstructionsTwo :: [Text]
 binaryInstructionsTwo =
-  [ "1 0 101010 001 001",
-    "1 0 111010 010 010",
-    "1 0 110000 011 011",
-    "1 0 001101 100 100",
-    "1 0 001111 101 101",
-    "1 0 011111 110 110",
-    "1 0 010101 111 111"
+  [ "1 11 0 101010 001 001",
+    "1 11 0 111010 010 010",
+    "1 11 0 110000 011 011",
+    "1 11 0 001101 100 100",
+    "1 11 0 001111 101 101",
+    "1 11 0 011111 110 110",
+    "1 11 0 010101 111 111"
   ]
 
 machineCodeTwo :: Text
 machineCodeTwo =
-  [r|10101010001001
-10111010010010
-10110000011011
-10001101100100
-10001111101101
-10011111110110
-10010101111111
+  [r|1110101010001001
+1110111010010010
+1110110000011011
+1110001101100100
+1110001111101101
+1110011111110110
+1110010101111111
 |]
 
 exampleInstructionsThree :: [Instruction]
@@ -523,3 +527,73 @@ exampleVariableLUT = [("k", 18), ("var", 17), ("i", 16)]
 
 genAddressInstr :: Int -> Text
 genAddressInstr n = T.unlines ["@" <> T.pack (show x) | x <- [0 .. n :: Int]]
+
+exampleAssemblyOne :: Text
+exampleAssemblyOne =
+  [r|// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/04/Mult.asm
+
+// Multiplies R0 and R1 and stores the result in R2.
+// (R0, R1, R2 refer to RAM[0], RAM[1], and RAM[2], respectively.)
+//
+// This program only needs to handle arguments that satisfy
+// R0 >= 0, R1 >= 0, and R0*R1 < 32768.
+
+  // initialize i
+  @i
+  M=0
+
+  // initialize @R2
+  @R2
+  M=0
+
+(LOOP)
+  // if (i == R1) goto END
+  @R1
+  D=M
+  @i
+  D=D-M
+
+  @END
+  D;JEQ
+
+  @R0
+  D=M
+  @R2
+  M=D+M
+
+  @i
+  M=M+1
+
+  @LOOP
+  D;JMP
+
+(END)
+  @END
+  0;JMP|]
+  
+exampleCompiledOne :: Text
+exampleCompiledOne = 
+  [r|0000000000010000
+1110101010001000
+0000000000000010
+1110101010001000
+0000000000000001
+1111110000010000
+0000000000010000
+1111010011010000
+0000000000010010
+1110001100000010
+0000000000000000
+1111110000010000
+0000000000000010
+1111000010001000
+0000000000010000
+1111110111001000
+0000000000000100
+1110001100000111
+0000000000010010
+1110101010000111
+|]

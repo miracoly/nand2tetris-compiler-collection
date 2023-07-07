@@ -42,7 +42,7 @@ type ParseErrorDescription = String
 binary :: Instruction -> Text
 binary i = case i of
   A' n -> "0 " <> T.pack (printf "%015b" n)
-  C' a c d j -> "1 " <> T.pack (unwords [showBin a "", printf "%06b" c, printf "%03b" d, printf "%03b" j])
+  C' a c d j -> "1 11 " <> T.pack (unwords [showBin a "", printf "%06b" c, printf "%03b" d, printf "%03b" j])
 
 -- | Parse single Instruction and return 'Data.Either.Right' 'Instruction' if instruction could be parsed,
 -- otherwise 'Data.Either.Left' 'ParseErrorDescription'.
