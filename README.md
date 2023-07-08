@@ -1,5 +1,7 @@
 # Hack Assembler - Nand2Tetris
 
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/miracoly/nand2tetris-assembler/run-tests.yml?style=for-the-badge&logo=haskell&label=stack%20test&link=https%3A%2F%2Fgithub.com%2Fmiracoly%2Fnand2tetris-assembler%2Factions%2Fworkflows%2Frun-tests.yml)
+
 [Nand2Tetris](https://www.nand2tetris.org/) is a 12-week online course [available at Coursera](https://www.coursera.org/learn/build-a-computer) which teaches the fundamentals of computer architecture and low-level programming.
 Week 6 is about programming an assembler for the previous build architecture, called the Hack computer. This is my solution...
 
