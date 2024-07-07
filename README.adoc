@@ -1,25 +1,35 @@
-# Hack Assembler - Nand2Tetris
+= Nand2Tetris - Compiler Collection
+:toc: preamble
 
-![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/miracoly/nand2tetris-assembler/run-tests.yml?style=for-the-badge&logo=haskell&label=stack%20test&link=https%3A%2F%2Fgithub.com%2Fmiracoly%2Fnand2tetris-assembler%2Factions%2Fworkflows%2Frun-tests.yml)
+image::https://img.shields.io/github/actions/workflow/status/miracoly/nand2tetris-assembler/run-tests.yml?style=for-the-badge&logo=haskell&label=stack%20test&link=https%3A%2F%2Fgithub.com%2Fmiracoly%2Fnand2tetris-assembler%2Factions%2Fworkflows%2Frun-tests.yml[GitHub Workflow Status (with event)]
 
-[Nand2Tetris](https://www.nand2tetris.org/) is a 12-week online course [available at Coursera](https://www.coursera.org/learn/build-a-computer) which teaches the fundamentals of computer architecture and low-level programming.
+https://www.nand2tetris.org/[Nand2Tetris] is a 12-week online course https://www.coursera.org/learn/build-a-computer[available at Coursera] which teaches the fundamentals of computer architecture and low-level programming.
+
+
+== Assembler
+
 Week 6 is about programming an assembler for the previous build architecture, called the Hack computer. This is my solution...
 
-## Usage
+=== Usage
+
 - Install with `stack install`. This builds executable `nand2tetris-assembler`
 - From StdIn: `nand2tetris-assembler` -> enter assembly code (end input with `Ctrl+D`) -> outputs to StdOut
 - From File `nand2tetris-assembler path/to/file` -> reads file and writes to `output.hack`
 
-### Additional Infos
+==== Additional Infos
+
 - Outputs machine code as Ascii, not bytes. This is needed to work with provided CpuSimulator.
 - This project passes all provided tests assembly programs, but it's still far from production ready. Its main purpose was **learning**.
   - Error handling ist minimal.
   - Performance was not considered.
   - CLI is minimal
 
-## Example
+### Example
+
 Find Max (Example from project 6 - download [software suite](https://www.nand2tetris.org/software))
-```
+
+[source, asm]
+----
 // Computes R2 = max(R0, R1)  (R0,R1,R2 refer to RAM[0],RAM[1],RAM[2])
 
    @R0
@@ -41,11 +51,12 @@ Find Max (Example from project 6 - download [software suite](https://www.nand2te
 (INFINITE_LOOP)
    @INFINITE_LOOP
    0;JMP            // infinite loop
-```
+----
 
 compiles to
 
-```
+[source, asm]
+----
 0000000000000000
 1111110000010000
 0000000000000001
@@ -62,4 +73,4 @@ compiles to
 1110001100001000
 0000000000001110
 1110101010000111
-```
+----
