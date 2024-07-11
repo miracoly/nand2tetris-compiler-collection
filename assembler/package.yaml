@@ -6,10 +6,6 @@ author:              "miracoly"
 maintainer:          "example@example.com"
 copyright:           "2023 miracoly"
 
-extra-source-files:
-- README.md
-- CHANGELOG.md
-
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
 # category:            Web
@@ -20,8 +16,8 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/miracoly/nand2tetris-assembler#readme>
 
 dependencies:
-- base >= 4.7 && < 5
-- text >= 1.2.5 && < 2.0.0
+- base >= 4.18 && < 5
+- text >= 2.0.2 && < 3.0.0
 
 ghc-options:
 - -Wall
@@ -58,7 +54,7 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - nand2tetris-assembler
-    - hspec >= 2.9.7 && < 3.0.0
-    - QuickCheck >= 2.14.2 && < 3.0.0
-    - quickcheck-instances >= 0.3.29.1 && < 0.4.0.0
-    - raw-strings-qq == 1.1
+    - hspec >= 2.11.9 && < 3.0.0
+    - QuickCheck >= 2.14.3 && < 3.0.0
+    - quickcheck-instances >= 0.3.30 && < 0.4.0.0
+    - raw-strings-qq == 1.1 && < 2.0
