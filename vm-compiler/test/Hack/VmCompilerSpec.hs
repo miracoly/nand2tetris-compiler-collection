@@ -1,12 +1,14 @@
 module Hack.VmCompilerSpec (spec) where
 
+import Hack.VmCompiler (parseVmLines)
 import Hack.VmCompiler.Internal
   ( VmCommand (..),
     VmLine (..),
     VmSegment (..),
     pCommand,
+    pComment,
     pLines,
-    pSegment, pComment,
+    pSegment,
   )
 import Test.Hspec (Spec, describe, it, shouldBe)
 import Test.QuickCheck.Instances.Text ()
@@ -14,6 +16,27 @@ import Text.Parsec (parse)
 
 spec :: Spec
 spec = do
+  describe "parseVmLines" $ do
+    it "parses multiple arithmetical commands" $ do
+      parseVmLines "add\nsub\n" `shouldBe` Right [Command Add, Command Sub]
+    it "parses multiple logical commands" $ do
+      parseVmLines "eq\ngt\n" `shouldBe` Right [Command Eq, Command Gt]
+    it "parses multiple push / pop commands" $ do
+      parseVmLines "push constant 7\npop local 0\n"
+        `shouldBe` Right [Command $ Push Constant 7, Command $ Pop Local 0]
+    it "parses comments" $ do
+      parseVmLines "// comment\n" `shouldBe` Right [Comment "comment"]
+    it "parses mixed commands" $ do
+      parseVmLines "add\npush constant 7\n"
+        `shouldBe` Right [Command Add, Command $ Push Constant 7]
+      parseVmLines "eq\npop local 0\n"
+        `shouldBe` Right [Command Eq, Command $ Pop Local 0]
+    it "parses mixed commands with comments" $ do
+      parseVmLines "add\n// comment\n"
+        `shouldBe` Right [Command Add, Comment "comment"]
+      parseVmLines "pop this 1\n// comment\n"
+        `shouldBe` Right [Command $ Pop This 1, Comment "comment"]
+
   describe "pLines" $ do
     it "parses multiple arithmetical commands" $ do
       parse pLines "" "add\nsub\n" `shouldBe` Right [Command Add, Command Sub]
