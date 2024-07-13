@@ -1,7 +1,8 @@
 module Hack.VmCompiler.Internal (module Hack.VmCompiler.Internal) where
 
-import Text.Parsec (ParseError, anyToken, char, many, manyTill, parse)
-import Text.Parsec.String (GenParser)
+import Text.Parsec (ParseError, char, parse, many1, spaces, (<|>), try, many)
+import Text.Parsec.String (GenParser, Parser)
+import Text.Parsec.Char (letter, digit)
 
 -- | Represents a VM command.
 data VmCommand
@@ -31,24 +32,42 @@ data Segment
   deriving (Show, Eq)
 
 parseVmCommands :: String -> Either ParseError [VmCommand]
-parseVmCommands = parse pVmCommands ""
+parseVmCommands = parse pCommands ""
 
-pVmCommands :: GenParser Char st [VmCommand]
-pVmCommands = many pVmCommand
+pCommands :: Parser [VmCommand]
+pCommands = many pCommand
 
-pVmCommand :: GenParser Char st VmCommand
-pVmCommand = do
-  command <- manyTill anyToken (char ' ')
+pCommand :: Parser VmCommand
+pCommand =  try pArithmetic <|> try pLogical <|> pPopPush
+
+pPopPush :: Parser VmCommand
+pPopPush = do
+  command <- many1 letter
+  spaces
+  segment <- pSegment
+  spaces
+  index <- many1 digit
+  _ <- eol
   case command of
-    "push" -> do
-      segment <- pVmSegment
-      Push segment <$> pIndex
-    "pop" -> do
-      segment <- pVmSegment
-      Pop segment <$> pIndex
+    "push" -> return $ Push segment (read index)
+    "pop" -> return $ Pop segment (read index)
+    _ -> fail "Invalid VM command"
+
+pArithmetic :: Parser VmCommand
+pArithmetic = do
+  command <- many1 letter
+  _ <- eol
+  case command of
     "add" -> return Add
     "sub" -> return Sub
     "neg" -> return Neg
+    _ -> fail "Invalid VM command"
+
+pLogical :: Parser VmCommand
+pLogical = do
+  command <- many1 letter
+  _ <- eol
+  case command of
     "eq" -> return Eq
     "gt" -> return Gt
     "lt" -> return Lt
@@ -57,32 +76,19 @@ pVmCommand = do
     "not" -> return Not
     _ -> fail "Invalid VM command"
 
-pVmSegment :: GenParser Char st Segment
-pVmSegment = do
-  segment <- manyTill anyToken (char ' ')
+pSegment :: Parser Segment
+pSegment = do
+  segment <- many1 letter
   case segment of
-    "constant" -> return Constant
-    "local" -> return Local
     "argument" -> return Argument
+    "local" -> return Local
+    "static" -> return Static
+    "constant" -> return Constant
     "this" -> return This
     "that" -> return That
-    "temp" -> return Temp
     "pointer" -> return Pointer
-    "static" -> return Static
-    _ -> fail "Invalid VM segment"
-
-pIndex :: GenParser Char st Int
-pIndex = do
-  index <- manyTill anyToken eol
-  case reads index of
-    [(i, "")] -> return i
-    _ -> fail "Invalid index"
-
-pLines :: GenParser Char st [String]
-pLines = many pLine
-
-pLine :: GenParser Char st String
-pLine = manyTill anyToken eol
+    "temp" -> return Temp
+    _ -> fail "Invalid segment"
 
 eol :: GenParser Char st Char
 eol = char '\n'
