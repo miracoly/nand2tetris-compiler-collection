@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Hack.VmCompiler
+      Hack.VmCompiler.Internal
   other-modules:
       Paths_vm_compiler
   autogen-modules:
