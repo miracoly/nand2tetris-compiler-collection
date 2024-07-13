@@ -1,6 +1,11 @@
 module Main (main) where
 
-import Lib
+import Hack.VmCompiler (parseVmCommand)
 
 main :: IO ()
-main = someFunc
+main = do
+  let parsed = parseVmCommand text
+  print parsed
+
+text :: String
+text = "Hello, world!\nSecond Line\n"
