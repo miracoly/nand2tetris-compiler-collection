@@ -1,0 +1,45 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "stack test (vm-compiler)",
+      "type": "shell",
+      "command": "stack test",
+      "options": {
+        "cwd": "${workspaceFolder}/vm-compiler"
+      }
+    },
+    {
+      "label": "stack build (vm-compiler)",
+      "type": "shell",
+      "command": "stack build",
+      "options": {
+        "cwd": "${workspaceFolder}/vm-compiler"
+      }
+    },
+    {
+      "label": "stack run (vm-compiler)",
+      "type": "shell",
+      "command": "stack run",
+      "options": {
+        "cwd": "${workspaceFolder}/vm-compiler"
+      }
+    },
+    {
+      "label": "stack repl (vm-compiler)",
+      "type": "shell",
+      "command": "stack repl",
+      "options": {
+        "cwd": "${workspaceFolder}/vm-compiler"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "args",
+      "description": "Programm Arguments",
+      "default": "bla.txt",
+      "type": "promptString"
+    }
+  ]
+}
