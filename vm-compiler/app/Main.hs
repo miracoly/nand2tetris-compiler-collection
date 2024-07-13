@@ -1,10 +1,10 @@
 module Main (main) where
 
-import Hack.VmCompiler (parseVmCommands)
+import Hack.VmCompiler (parseVmLines)
 
 main :: IO ()
 main = do
-  let parsed = parseVmCommands text
+  let parsed = parseVmLines text
   print parsed
 
 text :: String

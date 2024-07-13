@@ -1,11 +1,12 @@
 module Hack.VmCompilerSpec (spec) where
 
 import Hack.VmCompiler.Internal
-  ( Segment (..),
-    VmCommand (..),
+  ( VmCommand (..),
+    VmLine (..),
+    VmSegment (..),
     pCommand,
-    pCommands,
-    pSegment,
+    pLines,
+    pSegment, pComment,
   )
 import Test.Hspec (Spec, describe, it, shouldBe)
 import Test.QuickCheck.Instances.Text ()
@@ -13,18 +14,32 @@ import Text.Parsec (parse)
 
 spec :: Spec
 spec = do
-  describe "pCommands" $ do
+  describe "pLines" $ do
     it "parses multiple arithmetical commands" $ do
-      parse pCommands "" "add\nsub\n" `shouldBe` Right [Add, Sub]
+      parse pLines "" "add\nsub\n" `shouldBe` Right [Command Add, Command Sub]
     it "parses multiple logical commands" $ do
-      parse pCommands "" "eq\ngt\n" `shouldBe` Right [Eq, Gt]
+      parse pLines "" "eq\ngt\n" `shouldBe` Right [Command Eq, Command Gt]
     it "parses multiple push / pop commands" $ do
-      parse pCommands "" "push constant 7\npop local 0\n"
-        `shouldBe` Right [Push Constant 7, Pop Local 0]
+      parse pLines "" "push constant 7\npop local 0\n"
+        `shouldBe` Right [Command $ Push Constant 7, Command $ Pop Local 0]
+    it "parses comments" $ do
+      parse pLines "" "// comment\n" `shouldBe` Right [Comment "comment"]
     it "parses mixed commands" $ do
-      parse pCommands "" "add\npush constant 7\n"
-        `shouldBe` Right [Add, Push Constant 7]
-      parse pCommands "" "eq\npop local 0\n" `shouldBe` Right [Eq, Pop Local 0]
+      parse pLines "" "add\npush constant 7\n"
+        `shouldBe` Right [Command Add, Command $ Push Constant 7]
+      parse pLines "" "eq\npop local 0\n"
+        `shouldBe` Right [Command Eq, Command $ Pop Local 0]
+    it "parses mixed commands with comments" $ do
+      parse pLines "" "add\n// comment\n"
+        `shouldBe` Right [Command Add, Comment "comment"]
+      parse pLines "" "pop this 1\n// comment\n"
+        `shouldBe` Right [Command $ Pop This 1, Comment "comment"]
+
+  describe "pComment" $ do
+    it "parses comments" $ do
+      parse pComment "" "//comment\n" `shouldBe` Right "comment"
+    it "parses comments and trims whitespaces" $ do
+      parse pComment "" "//  comment  \n" `shouldBe` Right "comment"
 
   describe "pCommand" $ do
     it "parses arithmetical commands" $ do

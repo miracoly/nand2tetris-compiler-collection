@@ -1,13 +1,20 @@
 module Hack.VmCompiler.Internal (module Hack.VmCompiler.Internal) where
 
-import Text.Parsec (ParseError, char, parse, many1, spaces, (<|>), try, many)
+import Data.Char (isSpace)
+import Text.Parsec
+    ( char, many, many1, spaces, try, (<|>), noneOf )
+import Text.Parsec.Char (digit, letter)
 import Text.Parsec.String (GenParser, Parser)
-import Text.Parsec.Char (letter, digit)
+
+data VmLine
+  = Command VmCommand
+  | Comment String
+  deriving (Show, Eq)
 
 -- | Represents a VM command.
 data VmCommand
-  = Push Segment Int
-  | Pop Segment Int
+  = Push VmSegment Int
+  | Pop VmSegment Int
   | Add
   | Sub
   | Neg
@@ -20,7 +27,7 @@ data VmCommand
   deriving (Show, Eq)
 
 -- | Represents a segment of the VM memory used by push and pop commands.
-data Segment
+data VmSegment
   = Constant
   | Local
   | Argument
@@ -31,14 +38,27 @@ data Segment
   | Static
   deriving (Show, Eq)
 
-parseVmCommands :: String -> Either ParseError [VmCommand]
-parseVmCommands = parse pCommands ""
+pLines :: Parser [VmLine]
+pLines = many pLine
 
-pCommands :: Parser [VmCommand]
-pCommands = many pCommand
+pLine :: Parser VmLine
+pLine = try (Command <$> pCommand) <|> (Comment <$> pComment)
+
+pComment :: Parser String
+pComment = do
+  _ <- char '/'
+  _ <- char '/'
+  comment <- many1 $ noneOf "\n"
+  _ <- eol
+  return $ trim comment
+
+trim :: String -> String
+trim = f . f
+  where
+    f = reverse . dropWhile isSpace
 
 pCommand :: Parser VmCommand
-pCommand =  try pArithmetic <|> try pLogical <|> pPopPush
+pCommand = try pArithmetic <|> try pLogical <|> pPopPush
 
 pPopPush :: Parser VmCommand
 pPopPush = do
@@ -76,7 +96,7 @@ pLogical = do
     "not" -> return Not
     _ -> fail "Invalid VM command"
 
-pSegment :: Parser Segment
+pSegment :: Parser VmSegment
 pSegment = do
   segment <- many1 letter
   case segment of
