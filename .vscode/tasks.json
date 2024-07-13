@@ -32,6 +32,14 @@
       "options": {
         "cwd": "${workspaceFolder}/vm-compiler"
       }
+    },
+    {
+      "label": "stack install (vm-compiler)",
+      "type": "shell",
+      "command": "stack install",
+      "options": {
+        "cwd": "${workspaceFolder}/vm-compiler"
+      }
     }
   ],
   "inputs": [
