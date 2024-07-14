@@ -1,8 +1,8 @@
-module Hack.VmCompiler (parseVmLines) where
+module Hack.VmCompiler (compile) where
 
 import Hack.VmCompiler.Internal
-import Text.Parsec (ParseError, parse)
+import Text.Parsec (ParseError)
 
--- | Parses a list of VM commands including comments.
-parseVmLines :: String -> Either ParseError [VmLine]
-parseVmLines = parse pLines ""
+compile :: String -> Either ParseError String
+compile = fmap translateVmLines . parseVmLines
+
