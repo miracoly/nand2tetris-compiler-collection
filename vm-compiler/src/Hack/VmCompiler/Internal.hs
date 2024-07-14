@@ -25,12 +25,6 @@ translateVmLine l =
     Comment c -> ["// " ++ c]
 
 -- | Translates a VM command to a list of assembly commands.
--- push seg i -> addr = pSeg + i; *SP = *addr; SP++;
--- pop seg i -> addr = pSeg + i; SP--; *addr = *SP;
--- push constant i -> *SP = i; SP++;
--- pop constant i -> undefined;
--- push temp i -> addr = 5 + 1; *SP = *addr; SP++;
--- pop temp i -> addr = 5 + 1; SP--; *addr = *SP;
 -- push pointer i -> *SP = THIS/THAT; SP++;
 -- pop pointer i -> SP--; THIS/THAT = *SP;
 -- push static i -> *SP = filename.i; SP++;
@@ -86,6 +80,7 @@ translatePop seg i =
     This -> translatePopThis i
     That -> translatePopThat i
     Temp -> translatePopTemp i
+    Pointer -> translatePopPointer i
     _ -> undefined
 
 translatePopLocal :: Int -> [String]
@@ -100,7 +95,6 @@ translatePopThis = translatePopSeg This
 translatePopThat :: Int -> [String]
 translatePopThat = translatePopSeg That
 
--- pop temp i -> addr = 5 + 1; SP--; *addr = *SP;
 translatePopTemp :: Int -> [String]
 translatePopTemp i =
   [ "@" <> show i,
@@ -118,7 +112,19 @@ translatePopTemp i =
     "M=D"
   ]
 
--- pop seg i -> addr = pSeg + i; SP--; *addr = *SP;
+translatePopPointer :: Int -> [String]
+translatePopPointer i =
+  [ "@SP",
+    "M=M-1",
+    "A=M",
+    "D=M",
+    "@" <> case i of
+      0 -> "THIS"
+      1 -> "THAT"
+      _ -> error "Invalid pointer index",
+    "M=D"
+  ]
+
 translatePopSeg :: VmSegment -> Int -> [String]
 translatePopSeg seg i =
   case seg of
@@ -149,6 +155,7 @@ translatePush seg i =
     This -> translatePushThis i
     That -> translatePushThat i
     Temp -> translatePushTemp i
+    Pointer -> translatePushPointer i
     _ -> undefined
 
 translatePushLocal :: Int -> [String]
@@ -162,6 +169,20 @@ translatePushThis = translatePushSeg This
 
 translatePushThat :: Int -> [String]
 translatePushThat = translatePushSeg That
+
+translatePushPointer :: Int -> [String]
+translatePushPointer i =
+  [ "@" <> case i of
+      0 -> "THIS"
+      1 -> "THAT"
+      _ -> error "Invalid pointer index",
+    "D=M",
+    "@SP",
+    "A=M",
+    "M=D",
+    "@SP",
+    "M=M+1"
+  ]
 
 translatePushSeg :: VmSegment -> Int -> [String]
 translatePushSeg seg i =
