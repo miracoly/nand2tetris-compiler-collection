@@ -12,8 +12,11 @@ import Hack.VmCompiler.Internal
     pLines,
     pSegment,
     parseVmLines,
+    translateAdd,
     translatePush,
     translateSeg,
+    translateSub,
+    translateNeg,
   )
 import Test.Hspec (Spec, describe, it, shouldBe)
 import Test.QuickCheck.Instances.Text ()
@@ -31,6 +34,43 @@ spec = do
       compile simpleAddVm `shouldBe` Right simpleAddAsm
 
   describe "translating" $ do
+    describe "translate arithmetical commands" $ do
+      it "translates add command" $ do
+        translateAdd
+          `shouldBe` [ "@SP",
+                       "M=M-1",
+                       "A=M",
+                       "D=M",
+                       "@SP",
+                       "M=M-1",
+                       "A=M",
+                       "M=D+M",
+                       "@SP",
+                       "M=M+1"
+                     ]
+      it "translates sub command" $ do
+        translateSub
+          `shouldBe` [ "@SP",
+                       "M=M-1",
+                       "A=M",
+                       "D=M",
+                       "@SP",
+                       "M=M-1",
+                       "A=M",
+                       "M=M-D",
+                       "@SP",
+                       "M=M+1"
+                     ]
+      it "translates neg command" $ do
+        translateNeg
+          `shouldBe` [ "@SP",
+                       "M=M-1",
+                       "A=M",
+                       "M=-M",
+                       "@SP",
+                       "M=M+1"
+                     ]
+
     describe "translatePush" $ do
       it "translates push local commands" $ do
         translatePush Local 0

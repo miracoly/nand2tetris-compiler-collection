@@ -25,8 +25,6 @@ translateVmLine l =
     Comment c -> ["// " ++ c]
 
 -- | Translates a VM command to a list of assembly commands.
--- push pointer i -> *SP = THIS/THAT; SP++;
--- pop pointer i -> SP--; THIS/THAT = *SP;
 -- push static i -> *SP = filename.i; SP++;
 -- pop static i -> SP--; filename.i = *SP;
 translateVmCommand :: VmCommand -> [String]
@@ -68,6 +66,16 @@ translateSub =
     "M=M-1",
     "A=M",
     "M=M-D",
+    "@SP",
+    "M=M+1"
+  ]
+
+translateNeg :: [String]
+translateNeg =
+  [ "@SP",
+    "M=M-1",
+    "A=M",
+    "M=-M",
     "@SP",
     "M=M+1"
   ]
