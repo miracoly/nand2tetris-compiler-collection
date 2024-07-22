@@ -1,5 +1,8 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 module Hack.VmCompilerSpec (spec) where
 
+import Hack.VmCompiler (compile)
 import Hack.VmCompiler.Internal
   ( VmCommand (..),
     VmLine (..),
@@ -15,9 +18,18 @@ import Hack.VmCompiler.Internal
 import Test.Hspec (Spec, describe, it, shouldBe)
 import Test.QuickCheck.Instances.Text ()
 import Text.Parsec (parse)
+import Text.RawString.QQ (r)
 
 spec :: Spec
 spec = do
+  describe "compile" $ do
+    it "compiles BasicTest.asm" $ do
+      compile basicTestVm `shouldBe` Right basicTestAsm
+    it "compiles PointerTest.asm" $ do
+      compile pointerTestVm `shouldBe` Right pointerTestAsm
+    it "compiles SimpleAdd.asm" $ do
+      compile simpleAddVm `shouldBe` Right simpleAddAsm
+
   describe "translating" $ do
     describe "translatePush" $ do
       it "translates push local commands" $ do
@@ -280,3 +292,512 @@ spec = do
         parse pSegment "" "temp " `shouldBe` Right Temp
         parse pSegment "" "pointer " `shouldBe` Right Pointer
         parse pSegment "" "static " `shouldBe` Right Static
+
+basicTestVm :: String
+basicTestVm =
+  [r|// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/7/MemoryAccess/BasicTest/BasicTest.vm
+
+// Executes pop and push commands.
+
+push constant 10
+pop local 0
+push constant 21
+push constant 22
+pop argument 2
+pop argument 1
+push constant 36
+pop this 6
+push constant 42
+push constant 45
+pop that 5
+pop that 2
+push constant 510
+pop temp 6
+push local 0
+push that 5
+add
+push argument 1
+sub
+push this 6
+push this 6
+add
+sub
+push temp 6
+add
+|]
+
+basicTestAsm :: String
+basicTestAsm =
+  [r|// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/7/MemoryAccess/BasicTest/BasicTest.vm
+// Executes pop and push commands.
+@10
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@0
+D=A
+@LCL
+D=D+M
+@R13
+M=D
+@SP
+M=M-1
+A=M
+D=M
+@R13
+A=M
+M=D
+@21
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@22
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@2
+D=A
+@ARG
+D=D+M
+@R13
+M=D
+@SP
+M=M-1
+A=M
+D=M
+@R13
+A=M
+M=D
+@1
+D=A
+@ARG
+D=D+M
+@R13
+M=D
+@SP
+M=M-1
+A=M
+D=M
+@R13
+A=M
+M=D
+@36
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@6
+D=A
+@THIS
+D=D+M
+@R13
+M=D
+@SP
+M=M-1
+A=M
+D=M
+@R13
+A=M
+M=D
+@42
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@45
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@5
+D=A
+@THAT
+D=D+M
+@R13
+M=D
+@SP
+M=M-1
+A=M
+D=M
+@R13
+A=M
+M=D
+@2
+D=A
+@THAT
+D=D+M
+@R13
+M=D
+@SP
+M=M-1
+A=M
+D=M
+@R13
+A=M
+M=D
+@510
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@6
+D=A
+@5
+D=D+A
+@R13
+M=D
+@SP
+M=M-1
+A=M
+D=M
+@R13
+A=M
+M=D
+@0
+D=A
+@LCL
+A=D+M
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@5
+D=A
+@THAT
+A=D+M
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+M=M-1
+A=M
+D=M
+@SP
+M=M-1
+A=M
+M=D+M
+@SP
+M=M+1
+@1
+D=A
+@ARG
+A=D+M
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+M=M-1
+A=M
+D=M
+@SP
+M=M-1
+A=M
+M=M-D
+@SP
+M=M+1
+@6
+D=A
+@THIS
+A=D+M
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@6
+D=A
+@THIS
+A=D+M
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+M=M-1
+A=M
+D=M
+@SP
+M=M-1
+A=M
+M=D+M
+@SP
+M=M+1
+@SP
+M=M-1
+A=M
+D=M
+@SP
+M=M-1
+A=M
+M=M-D
+@SP
+M=M+1
+@6
+D=A
+@5
+A=D+A
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+M=M-1
+A=M
+D=M
+@SP
+M=M-1
+A=M
+M=D+M
+@SP
+M=M+1
+|]
+
+pointerTestVm :: String
+pointerTestVm =
+  [r|// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/7/MemoryAccess/PointerTest/PointerTest.vm
+
+// Executes pop and push commands using the 
+// pointer, this, and that segments.
+
+push constant 3030
+pop pointer 0
+push constant 3040
+pop pointer 1
+push constant 32
+pop this 2
+push constant 46
+pop that 6
+push pointer 0
+push pointer 1
+add
+push this 2
+sub
+push that 6
+add
+|]
+
+pointerTestAsm :: String
+pointerTestAsm =
+  [r|// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/7/MemoryAccess/PointerTest/PointerTest.vm
+// Executes pop and push commands using the
+// pointer, this, and that segments.
+@3030
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+M=M-1
+A=M
+D=M
+@THIS
+M=D
+@3040
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+M=M-1
+A=M
+D=M
+@THAT
+M=D
+@32
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@2
+D=A
+@THIS
+D=D+M
+@R13
+M=D
+@SP
+M=M-1
+A=M
+D=M
+@R13
+A=M
+M=D
+@46
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@6
+D=A
+@THAT
+D=D+M
+@R13
+M=D
+@SP
+M=M-1
+A=M
+D=M
+@R13
+A=M
+M=D
+@THIS
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@THAT
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+M=M-1
+A=M
+D=M
+@SP
+M=M-1
+A=M
+M=D+M
+@SP
+M=M+1
+@2
+D=A
+@THIS
+A=D+M
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+M=M-1
+A=M
+D=M
+@SP
+M=M-1
+A=M
+M=M-D
+@SP
+M=M+1
+@6
+D=A
+@THAT
+A=D+M
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+M=M-1
+A=M
+D=M
+@SP
+M=M-1
+A=M
+M=D+M
+@SP
+M=M+1
+|]
+
+simpleAddVm :: String
+simpleAddVm =
+  [r|// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/7/StackArithmetic/SimpleAdd/SimpleAdd.vm
+
+// Pushes and adds two constants.
+
+push constant 7
+push constant 8
+add
+|]
+
+simpleAddAsm :: String
+simpleAddAsm =
+  [r|// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/7/StackArithmetic/SimpleAdd/SimpleAdd.vm
+// Pushes and adds two constants.
+@7
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@8
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+M=M-1
+A=M
+D=M
+@SP
+M=M-1
+A=M
+M=D+M
+@SP
+M=M+1
+|]
