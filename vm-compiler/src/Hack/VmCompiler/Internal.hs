@@ -34,12 +34,12 @@ translateVmCommand c =
     Pop seg i -> translatePop seg i
     Add -> translateAdd
     Sub -> translateSub
-    Neg -> undefined
-    Eq -> undefined
-    Gt -> undefined
-    Lt -> undefined
-    And -> undefined
-    Or -> undefined
+    Neg -> translateNeg
+    Eq -> translateEq
+    Gt -> translateGt
+    Lt -> translateLt
+    And -> translateAnd
+    Or -> translateOr
     Not -> undefined
 
 translateAdd :: [String]
@@ -76,6 +76,107 @@ translateNeg =
     "M=M-1",
     "A=M",
     "M=-M",
+    "@SP",
+    "M=M+1"
+  ]
+
+translateEq :: [String]
+translateEq =
+  [ "@SP",
+    "AM=M-1",
+    "D=M",
+    "@SP",
+    "AM=M-1",
+    "@EQUAL",
+    "D;JEQ",
+    "@SP",
+    "A=M",
+    "M=0",
+    "@END_EQ",
+    "0;JMP",
+    "(EQUAL)",
+    "@SP",
+    "A=M",
+    "M=-1"
+  ]
+
+translateGt :: [String]
+translateGt =
+  [ "@SP",
+    "AM=M-1",
+    "D=M",
+    "@SP",
+    "AM=M-1",
+    "D=M-D",
+    "@GREATER",
+    "D;JGT",
+    "@SP",
+    "A=M",
+    "M=0",
+    "@END_GT",
+    "0;JMP",
+    "(GREATER)",
+    "@SP",
+    "A=M",
+    "M=-1",
+    "(END_GT)",
+    "@SP",
+    "M=M+1"
+  ]
+
+translateLt :: [String]
+translateLt =
+  [ "@SP",
+    "AM=M-1",
+    "D=M",
+    "@SP",
+    "AM=M-1",
+    "D=M-D",
+    "@LESS",
+    "D;JLT",
+    "@SP",
+    "A=M",
+    "M=0",
+    "@END_LT",
+    "0;JMP",
+    "(LESS)",
+    "@SP",
+    "A=M",
+    "M=-1",
+    "(END_LT)",
+    "@SP",
+    "M=M+1"
+  ]
+
+translateAnd :: [String]
+translateAnd =
+  [ "@SP",
+    "AM=M-1",
+    "D=M",
+    "@SP",
+    "AM=M-1",
+    "M=D&M",
+    "@SP",
+    "M=M+1"
+  ]
+
+translateOr :: [String]
+translateOr =
+  [ "@SP",
+    "AM=M-1",
+    "D=M",
+    "@SP",
+    "AM=M-1",
+    "M=D|M",
+    "@SP",
+    "M=M+1"
+  ]
+
+translateNot :: [String]
+translateNot =
+  [ "@SP",
+    "AM=M-1",
+    "M=!M",
     "@SP",
     "M=M+1"
   ]

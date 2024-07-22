@@ -13,10 +13,16 @@ import Hack.VmCompiler.Internal
     pSegment,
     parseVmLines,
     translateAdd,
+    translateAnd,
+    translateEq,
+    translateGt,
+    translateLt,
+    translateNeg,
+    translateNot,
+    translateOr,
     translatePush,
     translateSeg,
     translateSub,
-    translateNeg,
   )
 import Test.Hspec (Spec, describe, it, shouldBe)
 import Test.QuickCheck.Instances.Text ()
@@ -67,6 +73,101 @@ spec = do
                        "M=M-1",
                        "A=M",
                        "M=-M",
+                       "@SP",
+                       "M=M+1"
+                     ]
+      it "translates eq command" $ do
+        translateEq
+          `shouldBe` [ "@SP",
+                       "AM=M-1",
+                       "D=M",
+                       "@SP",
+                       "AM=M-1",
+                       "@EQUAL",
+                       "D;JEQ",
+                       "@SP",
+                       "A=M",
+                       "M=0",
+                       "@END_EQ",
+                       "0;JMP",
+                       "(EQUAL)",
+                       "@SP",
+                       "A=M",
+                       "M=-1"
+                     ]
+      it "translates gt command" $ do
+        translateGt
+          `shouldBe` [ "@SP",
+                       "AM=M-1",
+                       "D=M",
+                       "@SP",
+                       "AM=M-1",
+                       "D=M-D",
+                       "@GREATER",
+                       "D;JGT",
+                       "@SP",
+                       "A=M",
+                       "M=0",
+                       "@END_GT",
+                       "0;JMP",
+                       "(GREATER)",
+                       "@SP",
+                       "A=M",
+                       "M=-1",
+                       "(END_GT)",
+                       "@SP",
+                       "M=M+1"
+                     ]
+      it "translates lt command" $ do
+        translateLt
+          `shouldBe` [ "@SP",
+                       "AM=M-1",
+                       "D=M",
+                       "@SP",
+                       "AM=M-1",
+                       "D=M-D",
+                       "@LESS",
+                       "D;JLT",
+                       "@SP",
+                       "A=M",
+                       "M=0",
+                       "@END_LT",
+                       "0;JMP",
+                       "(LESS)",
+                       "@SP",
+                       "A=M",
+                       "M=-1",
+                       "(END_LT)",
+                       "@SP",
+                       "M=M+1"
+                     ]
+      it "translates and command" $ do
+        translateAnd
+          `shouldBe` [ "@SP",
+                       "AM=M-1",
+                       "D=M",
+                       "@SP",
+                       "AM=M-1",
+                       "M=D&M",
+                       "@SP",
+                       "M=M+1"
+                     ]
+      it "translates or command" $ do
+        translateOr
+          `shouldBe` [ "@SP",
+                       "AM=M-1",
+                       "D=M",
+                       "@SP",
+                       "AM=M-1",
+                       "M=D|M",
+                       "@SP",
+                       "M=M+1"
+                     ]
+      it "translates not command" $ do
+        translateNot
+          `shouldBe` [ "@SP",
+                       "AM=M-1",
+                       "M=!M",
                        "@SP",
                        "M=M+1"
                      ]
