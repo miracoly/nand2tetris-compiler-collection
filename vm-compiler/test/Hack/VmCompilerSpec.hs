@@ -77,67 +77,71 @@ spec = do
                        "M=M+1"
                      ]
       it "translates eq command" $ do
-        translateEq
+        translateEq 9
           `shouldBe` [ "@SP",
                        "AM=M-1",
                        "D=M",
                        "@SP",
                        "AM=M-1",
-                       "@EQUAL",
+                       "D=M-D",
+                       "@EQUAL_9",
                        "D;JEQ",
                        "@SP",
                        "A=M",
                        "M=0",
-                       "@END_EQ",
+                       "@END_EQ_9",
                        "0;JMP",
-                       "(EQUAL)",
+                       "(EQUAL_9)",
                        "@SP",
                        "A=M",
-                       "M=-1"
+                       "M=-1",
+                       "(END_EQ_9)",
+                       "@SP",
+                       "M=M+1"
                      ]
       it "translates gt command" $ do
-        translateGt
+        translateGt 9
           `shouldBe` [ "@SP",
                        "AM=M-1",
                        "D=M",
                        "@SP",
                        "AM=M-1",
                        "D=M-D",
-                       "@GREATER",
+                       "@GREATER_9",
                        "D;JGT",
                        "@SP",
                        "A=M",
                        "M=0",
-                       "@END_GT",
+                       "@END_GT_9",
                        "0;JMP",
-                       "(GREATER)",
+                       "(GREATER_9)",
                        "@SP",
                        "A=M",
                        "M=-1",
-                       "(END_GT)",
+                       "(END_GT_9)",
                        "@SP",
                        "M=M+1"
                      ]
       it "translates lt command" $ do
-        translateLt
+        translateLt 9
           `shouldBe` [ "@SP",
                        "AM=M-1",
                        "D=M",
                        "@SP",
                        "AM=M-1",
                        "D=M-D",
-                       "@LESS",
+                       "@LESS_9",
                        "D;JLT",
                        "@SP",
                        "A=M",
                        "M=0",
-                       "@END_LT",
+                       "@END_LT_9",
                        "0;JMP",
-                       "(LESS)",
+                       "(LESS_9)",
                        "@SP",
                        "A=M",
                        "M=-1",
-                       "(END_LT)",
+                       "(END_LT_9)",
                        "@SP",
                        "M=M+1"
                      ]

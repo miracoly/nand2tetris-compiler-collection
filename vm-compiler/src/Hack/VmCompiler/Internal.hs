@@ -16,31 +16,35 @@ import Text.Parsec.Prim (parse)
 import Text.Parsec.String (Parser)
 
 translateVmLines :: [VmLine] -> String
-translateVmLines = unlines . (=<<) translateVmLine
+translateVmLines = unlines . go 0
+  where
+    go :: Int -> [VmLine] -> [String]
+    go _ [] = []
+    go i (l : ls) = let (cs, i') = translateVmLine i l in cs ++ go i' ls
 
-translateVmLine :: VmLine -> [String]
-translateVmLine l =
+translateVmLine :: Int -> VmLine -> ([String], Int)
+translateVmLine i l =
   case l of
-    Command c -> translateVmCommand c
-    Comment c -> ["// " ++ c]
+    Command c -> translateVmCommand i c
+    Comment c -> (["// " ++ c], i)
 
 -- | Translates a VM command to a list of assembly commands.
 -- push static i -> *SP = filename.i; SP++;
 -- pop static i -> SP--; filename.i = *SP;
-translateVmCommand :: VmCommand -> [String]
-translateVmCommand c =
+translateVmCommand :: Int -> VmCommand -> ([String], Int)
+translateVmCommand i c =
   case c of
-    Push seg i -> translatePush seg i
-    Pop seg i -> translatePop seg i
-    Add -> translateAdd
-    Sub -> translateSub
-    Neg -> translateNeg
-    Eq -> translateEq
-    Gt -> translateGt
-    Lt -> translateLt
-    And -> translateAnd
-    Or -> translateOr
-    Not -> undefined
+    Push seg addr -> (translatePush seg addr, i)
+    Pop seg addr -> (translatePop seg addr, i)
+    Add -> (translateAdd, i)
+    Sub -> (translateSub, i)
+    Neg -> (translateNeg, i)
+    Eq -> (translateEq i, i + 1)
+    Gt -> (translateGt i, i + 1)
+    Lt -> (translateLt i, i + 1)
+    And -> (translateAnd, i)
+    Or -> (translateOr, i)
+    Not -> (translateNot, i)
 
 translateAdd :: [String]
 translateAdd =
@@ -80,73 +84,80 @@ translateNeg =
     "M=M+1"
   ]
 
-translateEq :: [String]
-translateEq =
-  [ "@SP",
-    "AM=M-1",
-    "D=M",
-    "@SP",
-    "AM=M-1",
-    "@EQUAL",
-    "D;JEQ",
-    "@SP",
-    "A=M",
-    "M=0",
-    "@END_EQ",
-    "0;JMP",
-    "(EQUAL)",
-    "@SP",
-    "A=M",
-    "M=-1"
-  ]
+translateEq :: Int -> [String]
+translateEq i =
+  let i' = show i
+   in [ "@SP",
+        "AM=M-1",
+        "D=M",
+        "@SP",
+        "AM=M-1",
+        "D=M-D",
+        "@EQUAL_" <> i',
+        "D;JEQ",
+        "@SP",
+        "A=M",
+        "M=0",
+        "@END_EQ_" <> i',
+        "0;JMP",
+        "(EQUAL_" <> i' <> ")",
+        "@SP",
+        "A=M",
+        "M=-1",
+        "(END_EQ_" <> i' <> ")",
+        "@SP",
+        "M=M+1"
+      ]
 
-translateGt :: [String]
-translateGt =
-  [ "@SP",
-    "AM=M-1",
-    "D=M",
-    "@SP",
-    "AM=M-1",
-    "D=M-D",
-    "@GREATER",
-    "D;JGT",
-    "@SP",
-    "A=M",
-    "M=0",
-    "@END_GT",
-    "0;JMP",
-    "(GREATER)",
-    "@SP",
-    "A=M",
-    "M=-1",
-    "(END_GT)",
-    "@SP",
-    "M=M+1"
-  ]
+translateGt :: Int -> [String]
+translateGt i =
+  let i' = show i
+   in [ "@SP",
+        "AM=M-1",
+        "D=M",
+        "@SP",
+        "AM=M-1",
+        "D=M-D",
+        "@GREATER_" <> i',
+        "D;JGT",
+        "@SP",
+        "A=M",
+        "M=0",
+        "@END_GT_" <> i',
+        "0;JMP",
+        "(GREATER_" <> i' <> ")",
+        "@SP",
+        "A=M",
+        "M=-1",
+        "(END_GT_" <> i' <> ")",
+        "@SP",
+        "M=M+1"
+      ]
 
-translateLt :: [String]
-translateLt =
-  [ "@SP",
-    "AM=M-1",
-    "D=M",
-    "@SP",
-    "AM=M-1",
-    "D=M-D",
-    "@LESS",
-    "D;JLT",
-    "@SP",
-    "A=M",
-    "M=0",
-    "@END_LT",
-    "0;JMP",
-    "(LESS)",
-    "@SP",
-    "A=M",
-    "M=-1",
-    "(END_LT)",
-    "@SP",
-    "M=M+1"
-  ]
+translateLt :: Int -> [String]
+translateLt i =
+  let i' = show i
+   in [ "@SP",
+        "AM=M-1",
+        "D=M",
+        "@SP",
+        "AM=M-1",
+        "D=M-D",
+        "@LESS_" <> i',
+        "D;JLT",
+        "@SP",
+        "A=M",
+        "M=0",
+        "@END_LT_" <> i',
+        "0;JMP",
+        "(LESS_" <> i' <> ")",
+        "@SP",
+        "A=M",
+        "M=-1",
+        "(END_LT_" <> i' <> ")",
+        "@SP",
+        "M=M+1"
+      ]
 
 translateAnd :: [String]
 translateAnd =
