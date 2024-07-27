@@ -1,5 +1,9 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use tuple-section" #-}
 module Hack.VmCompiler.Internal (module Hack.VmCompiler.Internal) where
 
+import Control.Monad.Reader (MonadReader (ask), Reader, mapReader, runReader)
 import Data.Char (isSpace)
 import Text.Parsec
   ( char,
@@ -15,26 +19,30 @@ import Text.Parsec.Error (ParseError)
 import Text.Parsec.Prim (parse)
 import Text.Parsec.String (Parser)
 
-translateVmLines :: [VmLine] -> String
-translateVmLines = unlines . go 0
+translateVmLines :: [VmLine] -> Reader FilePath String
+translateVmLines = fmap unlines . go 0
   where
-    go :: Int -> [VmLine] -> [String]
-    go _ [] = []
-    go i (l : ls) = let (cs, i') = translateVmLine i l in cs ++ go i' ls
+    go :: Int -> [VmLine] -> Reader FilePath [String]
+    go _ [] = return []
+    go i (l : ls) =
+      let f (cs, i') = mapReader (cs ++) (go i' ls)
+       in translateVmLine i l >>= f
 
-translateVmLine :: Int -> VmLine -> ([String], Int)
-translateVmLine i l =
+translateVmLine :: Int -> VmLine -> Reader FilePath ([String], Int)
+translateVmLine i l = do
   case l of
     Command c -> translateVmCommand i c
-    Comment c -> (["// " ++ c], i)
+    Comment c -> return (["// " ++ c], i)
 
 -- | Translates a VM command to a list of assembly commands.
 -- push static i -> *SP = filename.i; SP++;
 -- pop static i -> SP--; filename.i = *SP;
-translateVmCommand :: Int -> VmCommand -> ([String], Int)
-translateVmCommand i c =
-  case c of
-    Push seg addr -> (translatePush seg addr, i)
+translateVmCommand :: Int -> VmCommand -> Reader FilePath ([String], Int)
+translateVmCommand i c = do
+  fp <- ask
+  return $ case c of
+    Push seg addr -> do
+      runReader (mapReader (\cs -> (cs, i)) (translatePush seg addr)) fp
     Pop seg addr -> (translatePop seg addr, i)
     Add -> (translateAdd, i)
     Sub -> (translateSub, i)
@@ -201,7 +209,8 @@ translatePop seg i =
     That -> translatePopThat i
     Temp -> translatePopTemp i
     Pointer -> translatePopPointer i
-    _ -> undefined
+    Static -> translatePopStatic "StaticTest" i
+    Constant -> error "Cannot pop to constant segment"
 
 translatePopLocal :: Int -> [String]
 translatePopLocal = translatePopSeg Local
@@ -214,6 +223,15 @@ translatePopThis = translatePopSeg This
 
 translatePopThat :: Int -> [String]
 translatePopThat = translatePopSeg That
+
+translatePopStatic :: FilePath -> Int -> [String]
+translatePopStatic filename i =
+  [ "@SP",
+    "AM=M-1",
+    "D=M",
+    "@" <> filename <> "." <> show i,
+    "M=D"
+  ]
 
 translatePopTemp :: Int -> [String]
 translatePopTemp i =
@@ -266,9 +284,10 @@ translatePopSeg seg i =
           ]
     _ -> error "Segment not supported by this function."
 
-translatePush :: VmSegment -> Int -> [String]
-translatePush seg i =
-  case seg of
+translatePush :: VmSegment -> Int -> Reader FilePath [String]
+translatePush seg i = do
+  fp <- ask
+  return $ case seg of
     Constant -> translatePushConstant i
     Local -> translatePushLocal i
     Argument -> translatePushArgument i
@@ -276,7 +295,7 @@ translatePush seg i =
     That -> translatePushThat i
     Temp -> translatePushTemp i
     Pointer -> translatePushPointer i
-    _ -> undefined
+    Static -> translatePushStatic fp i
 
 translatePushLocal :: Int -> [String]
 translatePushLocal = translatePushSeg Local
@@ -289,6 +308,17 @@ translatePushThis = translatePushSeg This
 
 translatePushThat :: Int -> [String]
 translatePushThat = translatePushSeg That
+
+translatePushStatic :: FilePath -> Int -> [String]
+translatePushStatic filename i =
+  [ "@" <> filename <> "." <> show i,
+    "D=M",
+    "@SP",
+    "A=M",
+    "M=D",
+    "@SP",
+    "M=M+1"
+  ]
 
 translatePushPointer :: Int -> [String]
 translatePushPointer i =
