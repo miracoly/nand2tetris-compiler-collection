@@ -2,6 +2,7 @@
 
 module Hack.VmCompilerSpec (spec) where
 
+import Control.Monad.Reader (runReader)
 import Hack.VmCompiler (compile)
 import Hack.VmCompiler.Internal
   ( VmCommand (..),
@@ -25,7 +26,6 @@ import Hack.VmCompiler.Internal
     translateSub,
   )
 import Test.Hspec (Spec, describe, it, shouldBe)
-import Test.QuickCheck.Instances.Text ()
 import Text.Parsec (parse)
 import Text.RawString.QQ (r)
 
@@ -33,13 +33,13 @@ spec :: Spec
 spec = do
   describe "compile" $ do
     it "compiles BasicTest.asm" $ do
-      compile basicTestVm `shouldBe` Right basicTestAsm
+      runReader (compile basicTestVm) "" `shouldBe` Right basicTestAsm
     it "compiles PointerTest.asm" $ do
-      compile pointerTestVm `shouldBe` Right pointerTestAsm
+      runReader (compile pointerTestVm) "" `shouldBe` Right pointerTestAsm
     it "compiles SimpleAdd.asm" $ do
-      compile simpleAddVm `shouldBe` Right simpleAddAsm
+      runReader (compile simpleAddVm) "" `shouldBe` Right simpleAddAsm
     it "compiles StackTest.asm" $ do
-      compile stackTest `shouldBe` Right stackTestAsm
+      runReader (compile stackTest) "" `shouldBe` Right stackTestAsm
 
   describe "translating" $ do
     describe "translate arithmetical commands" $ do
@@ -180,7 +180,7 @@ spec = do
 
     describe "translatePush" $ do
       it "translates push local commands" $ do
-        translatePush Local 0
+        runReader (translatePush Local 0) ""
           `shouldBe` [ "@0",
                        "D=A",
                        "@LCL",
@@ -192,7 +192,7 @@ spec = do
                        "@SP",
                        "M=M+1"
                      ]
-        translatePush Local 1
+        runReader (translatePush Local 1) ""
           `shouldBe` [ "@1",
                        "D=A",
                        "@LCL",
@@ -205,7 +205,7 @@ spec = do
                        "M=M+1"
                      ]
       it "translates push constant commands" $ do
-        translatePush Constant 7
+        runReader (translatePush Constant 7) ""
           `shouldBe` [ "@7",
                        "D=A",
                        "@SP",
@@ -214,7 +214,7 @@ spec = do
                        "@SP",
                        "M=M+1"
                      ]
-        translatePush Constant 17
+        runReader (translatePush Constant 17) ""
           `shouldBe` [ "@17",
                        "D=A",
                        "@SP",
@@ -225,7 +225,7 @@ spec = do
                      ]
 
       it "translates push argument commands" $ do
-        translatePush Argument 0
+        runReader (translatePush Argument 0) ""
           `shouldBe` [ "@0",
                        "D=A",
                        "@ARG",
@@ -237,7 +237,7 @@ spec = do
                        "@SP",
                        "M=M+1"
                      ]
-        translatePush Argument 1
+        runReader (translatePush Argument 1) ""
           `shouldBe` [ "@1",
                        "D=A",
                        "@ARG",
@@ -251,7 +251,7 @@ spec = do
                      ]
 
       it "translates push this commands" $ do
-        translatePush This 0
+        runReader (translatePush This 0) ""
           `shouldBe` [ "@0",
                        "D=A",
                        "@THIS",
@@ -263,7 +263,7 @@ spec = do
                        "@SP",
                        "M=M+1"
                      ]
-        translatePush This 1
+        runReader (translatePush This 1) ""
           `shouldBe` [ "@1",
                        "D=A",
                        "@THIS",
@@ -277,7 +277,7 @@ spec = do
                      ]
 
       it "translates push that commands" $ do
-        translatePush That 0
+        runReader (translatePush That 0) ""
           `shouldBe` [ "@0",
                        "D=A",
                        "@THAT",
@@ -289,7 +289,7 @@ spec = do
                        "@SP",
                        "M=M+1"
                      ]
-        translatePush That 1
+        runReader (translatePush That 1) ""
           `shouldBe` [ "@1",
                        "D=A",
                        "@THAT",
@@ -303,7 +303,7 @@ spec = do
                      ]
 
       it "translates push temp commands" $ do
-        translatePush Temp 1
+        runReader (translatePush Temp 1) ""
           `shouldBe` [ "@1",
                        "D=A",
                        "@5",
@@ -315,7 +315,7 @@ spec = do
                        "@SP",
                        "M=M+1"
                      ]
-        translatePush Temp 7
+        runReader (translatePush Temp 7) ""
           `shouldBe` [ "@7",
                        "D=A",
                        "@5",
@@ -329,7 +329,7 @@ spec = do
                      ]
 
       it "translates push pointer commands" $ do
-        translatePush Pointer 0
+        runReader (translatePush Pointer 0) ""
           `shouldBe` [ "@THIS",
                        "D=M",
                        "@SP",
@@ -338,8 +338,19 @@ spec = do
                        "@SP",
                        "M=M+1"
                      ]
-        translatePush Pointer 1
+        runReader (translatePush Pointer 1) ""
           `shouldBe` [ "@THAT",
+                       "D=M",
+                       "@SP",
+                       "A=M",
+                       "M=D",
+                       "@SP",
+                       "M=M+1"
+                     ]
+
+      it "translates push static commands" $ do
+        runReader (translatePush Static 9) "TestFile.vm"
+          `shouldBe` [ "@TestFile.vm.9",
                        "D=M",
                        "@SP",
                        "A=M",

@@ -1,6 +1,6 @@
+{-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
-{-# HLINT ignore "Use tuple-section" #-}
 module Hack.VmCompiler.Internal (module Hack.VmCompiler.Internal) where
 
 import Control.Monad.Reader (MonadReader (ask), Reader, mapReader, runReader)
@@ -42,7 +42,7 @@ translateVmCommand i c = do
   fp <- ask
   return $ case c of
     Push seg addr -> do
-      runReader (mapReader (\cs -> (cs, i)) (translatePush seg addr)) fp
+      runReader (mapReader (,i) (translatePush seg addr)) fp
     Pop seg addr -> (translatePop seg addr, i)
     Add -> (translateAdd, i)
     Sub -> (translateSub, i)
