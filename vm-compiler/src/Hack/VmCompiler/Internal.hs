@@ -35,15 +35,14 @@ translateVmLine i l = do
     Comment c -> return (["// " ++ c], i)
 
 -- | Translates a VM command to a list of assembly commands.
--- push static i -> *SP = filename.i; SP++;
 -- pop static i -> SP--; filename.i = *SP;
 translateVmCommand :: Int -> VmCommand -> Reader FilePath ([String], Int)
 translateVmCommand i c = do
   fp <- ask
+  let run r = runReader (mapReader (,i) r) fp
   return $ case c of
-    Push seg addr -> do
-      runReader (mapReader (,i) (translatePush seg addr)) fp
-    Pop seg addr -> (translatePop seg addr, i)
+    Push seg addr -> run $ translatePush seg addr
+    Pop seg addr -> run $ translatePop seg addr
     Add -> (translateAdd, i)
     Sub -> (translateSub, i)
     Neg -> (translateNeg, i)
@@ -200,16 +199,17 @@ translateNot =
     "M=M+1"
   ]
 
-translatePop :: VmSegment -> Int -> [String]
-translatePop seg i =
-  case seg of
+translatePop :: VmSegment -> Int -> Reader FilePath [String]
+translatePop seg i = do
+  fp <- ask
+  return $ case seg of
     Local -> translatePopLocal i
     Argument -> translatePopArgument i
     This -> translatePopThis i
     That -> translatePopThat i
     Temp -> translatePopTemp i
     Pointer -> translatePopPointer i
-    Static -> translatePopStatic "StaticTest" i
+    Static -> translatePopStatic fp i
     Constant -> error "Cannot pop to constant segment"
 
 translatePopLocal :: Int -> [String]

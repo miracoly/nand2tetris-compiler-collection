@@ -40,6 +40,8 @@ spec = do
       runReader (compile simpleAddVm) "" `shouldBe` Right simpleAddAsm
     it "compiles StackTest.asm" $ do
       runReader (compile stackTest) "" `shouldBe` Right stackTestAsm
+    it "compiles StaticTest.asm" $ do
+      runReader (compile staticTest) "" `shouldBe` Right staticTestAsm
 
   describe "translating" $ do
     describe "translate arithmetical commands" $ do
@@ -1011,6 +1013,452 @@ not
 
 stackTestAsm :: String
 stackTestAsm =
+  [r|// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/7/StackArithmetic/StackTest/StackTest.vm
+// Executes a sequence of arithmetic and logical operations on the stack.
+@17
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@17
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+AM=M-1
+D=M
+@SP
+AM=M-1
+D=M-D
+@EQUAL_0
+D;JEQ
+@SP
+A=M
+M=0
+@END_EQ_0
+0;JMP
+(EQUAL_0)
+@SP
+A=M
+M=-1
+(END_EQ_0)
+@SP
+M=M+1
+@17
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@16
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+AM=M-1
+D=M
+@SP
+AM=M-1
+D=M-D
+@EQUAL_1
+D;JEQ
+@SP
+A=M
+M=0
+@END_EQ_1
+0;JMP
+(EQUAL_1)
+@SP
+A=M
+M=-1
+(END_EQ_1)
+@SP
+M=M+1
+@16
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@17
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+AM=M-1
+D=M
+@SP
+AM=M-1
+D=M-D
+@EQUAL_2
+D;JEQ
+@SP
+A=M
+M=0
+@END_EQ_2
+0;JMP
+(EQUAL_2)
+@SP
+A=M
+M=-1
+(END_EQ_2)
+@SP
+M=M+1
+@892
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@891
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+AM=M-1
+D=M
+@SP
+AM=M-1
+D=M-D
+@LESS_3
+D;JLT
+@SP
+A=M
+M=0
+@END_LT_3
+0;JMP
+(LESS_3)
+@SP
+A=M
+M=-1
+(END_LT_3)
+@SP
+M=M+1
+@891
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@892
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+AM=M-1
+D=M
+@SP
+AM=M-1
+D=M-D
+@LESS_4
+D;JLT
+@SP
+A=M
+M=0
+@END_LT_4
+0;JMP
+(LESS_4)
+@SP
+A=M
+M=-1
+(END_LT_4)
+@SP
+M=M+1
+@891
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@891
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+AM=M-1
+D=M
+@SP
+AM=M-1
+D=M-D
+@LESS_5
+D;JLT
+@SP
+A=M
+M=0
+@END_LT_5
+0;JMP
+(LESS_5)
+@SP
+A=M
+M=-1
+(END_LT_5)
+@SP
+M=M+1
+@32767
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@32766
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+AM=M-1
+D=M
+@SP
+AM=M-1
+D=M-D
+@GREATER_6
+D;JGT
+@SP
+A=M
+M=0
+@END_GT_6
+0;JMP
+(GREATER_6)
+@SP
+A=M
+M=-1
+(END_GT_6)
+@SP
+M=M+1
+@32766
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@32767
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+AM=M-1
+D=M
+@SP
+AM=M-1
+D=M-D
+@GREATER_7
+D;JGT
+@SP
+A=M
+M=0
+@END_GT_7
+0;JMP
+(GREATER_7)
+@SP
+A=M
+M=-1
+(END_GT_7)
+@SP
+M=M+1
+@32766
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@32766
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+AM=M-1
+D=M
+@SP
+AM=M-1
+D=M-D
+@GREATER_8
+D;JGT
+@SP
+A=M
+M=0
+@END_GT_8
+0;JMP
+(GREATER_8)
+@SP
+A=M
+M=-1
+(END_GT_8)
+@SP
+M=M+1
+@57
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@31
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@53
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+M=M-1
+A=M
+D=M
+@SP
+M=M-1
+A=M
+M=D+M
+@SP
+M=M+1
+@112
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+M=M-1
+A=M
+D=M
+@SP
+M=M-1
+A=M
+M=M-D
+@SP
+M=M+1
+@SP
+M=M-1
+A=M
+M=-M
+@SP
+M=M+1
+@SP
+AM=M-1
+D=M
+@SP
+AM=M-1
+M=D&M
+@SP
+M=M+1
+@82
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@SP
+AM=M-1
+D=M
+@SP
+AM=M-1
+M=D|M
+@SP
+M=M+1
+@SP
+AM=M-1
+M=!M
+@SP
+M=M+1
+|]
+
+staticTest :: String
+staticTest =
+  [r|// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/7/StackArithmetic/StackTest/StackTest.vm
+
+// Executes a sequence of arithmetic and logical operations on the stack. 
+
+push constant 17
+push constant 17
+eq
+push constant 17
+push constant 16
+eq
+push constant 16
+push constant 17
+eq
+push constant 892
+push constant 891
+lt
+push constant 891
+push constant 892
+lt
+push constant 891
+push constant 891
+lt
+push constant 32767
+push constant 32766
+gt
+push constant 32766
+push constant 32767
+gt
+push constant 32766
+push constant 32766
+gt
+push constant 57
+push constant 31
+push constant 53
+add
+push constant 112
+sub
+neg
+and
+push constant 82
+or
+not
+|]
+
+staticTestAsm :: String
+staticTestAsm =
   [r|// This file is part of www.nand2tetris.org
 // and the book "The Elements of Computing Systems"
 // by Nisan and Schocken, MIT Press.
